@@ -6,6 +6,7 @@ interface QuizContextType {
   state: QuizState;
   initializeQuiz: (questions: Question[], mode?: 'normal' | 'weak-point') => void;
   selectAnswer: (index: number) => void;
+  toggleMultipleAnswer: (index: number) => void;
   submitAnswer: () => void;
   nextQuestion: () => void;
   completeQuiz: () => Promise<void>;
@@ -29,6 +30,7 @@ const QuizContext = createContext<QuizContextType | undefined>(undefined);
 type QuizAction =
   | { type: 'INITIALIZE'; payload: Question[]; mode?: 'normal' | 'weak-point' | 'category' }
   | { type: 'SELECT_ANSWER'; payload: number }
+  | { type: 'TOGGLE_MULTIPLE_ANSWER'; payload: number }
   | { type: 'SUBMIT_ANSWER' }
   | { type: 'NEXT_QUESTION' }
   | { type: 'COMPLETE_QUIZ' }
@@ -37,6 +39,7 @@ type QuizAction =
 const initialState: QuizState = {
   currentQuestionIndex: 0,
   selectedAnswerIndex: null,
+  selectedAnswerIndices: [],
   hasAnswered: false,
   questions: [],
   answers: [],
@@ -57,15 +60,41 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
       return {
         ...state,
         selectedAnswerIndex: action.payload,
+        selectedAnswerIndices: [],
       };
+    case 'TOGGLE_MULTIPLE_ANSWER': {
+      const newIndices = state.selectedAnswerIndices.includes(action.payload)
+        ? state.selectedAnswerIndices.filter((i) => i !== action.payload)
+        : [...state.selectedAnswerIndices, action.payload];
+      return {
+        ...state,
+        selectedAnswerIndices: newIndices,
+      };
+    }
     case 'SUBMIT_ANSWER': {
       const currentQuestion = state.questions[state.currentQuestionIndex];
-      const isCorrect = state.selectedAnswerIndex === currentQuestion.correctAnswerIndex;
+      let isCorrect = false;
+      let selectedIndex: number | number[];
+
+      if (currentQuestion.isMultipleChoice) {
+        const correctIndices = Array.isArray(currentQuestion.correctAnswerIndex)
+          ? currentQuestion.correctAnswerIndex.sort((a, b) => a - b)
+          : [currentQuestion.correctAnswerIndex];
+        const selectedIndices = state.selectedAnswerIndices.sort((a, b) => a - b);
+        isCorrect =
+          selectedIndices.length === correctIndices.length &&
+          selectedIndices.every((idx, i) => idx === correctIndices[i]);
+        selectedIndex = selectedIndices;
+      } else {
+        isCorrect = state.selectedAnswerIndex === currentQuestion.correctAnswerIndex;
+        selectedIndex = state.selectedAnswerIndex!;
+      }
+
       const newAnswers = [
         ...state.answers,
         {
           questionId: currentQuestion.id,
-          selectedIndex: state.selectedAnswerIndex!,
+          selectedIndex,
           isCorrect,
         },
       ];
@@ -81,6 +110,7 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
         ...state,
         currentQuestionIndex: state.currentQuestionIndex + 1,
         selectedAnswerIndex: null,
+        selectedAnswerIndices: [],
         hasAnswered: false,
       };
     case 'COMPLETE_QUIZ':
@@ -107,134 +137,115 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const selectAnswer = useCallback((index: number) => {
-    if (!state.hasAnswered) {
-      dispatch({ type: 'SELECT_ANSWER', payload: index });
-    }
-  }, [state.hasAnswered]);
+    dispatch({ type: 'SELECT_ANSWER', payload: index });
+  }, []);
+
+  const toggleMultipleAnswer = useCallback((index: number) => {
+    dispatch({ type: 'TOGGLE_MULTIPLE_ANSWER', payload: index });
+  }, []);
 
   const submitAnswer = useCallback(() => {
-    if (state.selectedAnswerIndex !== null && !state.hasAnswered) {
-      dispatch({ type: 'SUBMIT_ANSWER' });
-    }
-  }, [state.selectedAnswerIndex, state.hasAnswered]);
+    dispatch({ type: 'SUBMIT_ANSWER' });
+  }, []);
 
   const nextQuestion = useCallback(() => {
-    if (state.currentQuestionIndex < state.questions.length - 1) {
-      dispatch({ type: 'NEXT_QUESTION' });
-    } else {
-      dispatch({ type: 'COMPLETE_QUIZ' });
-    }
-  }, [state.currentQuestionIndex, state.questions.length]);
-
-  const completeQuiz = useCallback(async () => {
-    dispatch({ type: 'COMPLETE_QUIZ' });
-    // Server sync will be handled in the component that calls this
+    dispatch({ type: 'NEXT_QUESTION' });
   }, []);
 
   const resetQuiz = useCallback(() => {
     dispatch({ type: 'RESET' });
   }, []);
 
+  const completeQuiz = useCallback(async () => {
+    dispatch({ type: 'COMPLETE_QUIZ' });
+  }, []);
+
   const loadSessions = useCallback(async () => {
     try {
       const stored = await AsyncStorage.getItem('quizSessions');
-      if (stored) {
-        setSessions(JSON.parse(stored));
-      }
+      const sessionsList = stored ? JSON.parse(stored) : [];
+      setSessions(sessionsList);
     } catch (error) {
       console.error('Failed to load sessions:', error);
     }
   }, []);
 
-  const saveSession = useCallback(async (session: QuizSession) => {
-    try {
-      const updated = [...sessions, session];
-      await AsyncStorage.setItem('quizSessions', JSON.stringify(updated));
-      setSessions(updated);
-    } catch (error) {
-      console.error('Failed to save session:', error);
-    }
-  }, [sessions]);
+  const getCategoryStats = useCallback((sessions: QuizSession[]): CategoryStats[] => {
+    const categoryMap = new Map<string, { correct: number; total: number }>();
 
-  const getCategoryStats = useCallback((quizSessions: QuizSession[]): CategoryStats[] => {
-    const categoryMap = new Map<string, { total: number; correct: number }>();
-
-    quizSessions.forEach((session) => {
+    sessions.forEach((session) => {
       session.answers.forEach((answer) => {
         const question = state.questions.find((q) => q.id === answer.questionId);
         if (question) {
-          const category = question.category;
-          const current = categoryMap.get(category) || { total: 0, correct: 0 };
-          categoryMap.set(category, {
-            total: current.total + 1,
-            correct: current.correct + (answer.isCorrect ? 1 : 0),
+          const existing = categoryMap.get(question.category) || { correct: 0, total: 0 };
+          categoryMap.set(question.category, {
+            correct: existing.correct + (answer.isCorrect ? 1 : 0),
+            total: existing.total + 1,
           });
         }
       });
     });
 
-    return Array.from(categoryMap.entries()).map(([category, stats]) => ({
-      category,
-      total: stats.total,
-      correct: stats.correct,
-      percentage: Math.round((stats.correct / stats.total) * 100),
-    }));
+    return Array.from(categoryMap.entries())
+      .map(([category, data]) => ({
+        category,
+        correct: data.correct,
+        total: data.total,
+        percentage: Math.round((data.correct / data.total) * 100),
+      }))
+      .sort((a, b) => b.percentage - a.percentage);
   }, [state.questions]);
 
-  // Load sessions on mount
-  useEffect(() => {
-    loadSessions();
-  }, [loadSessions]);
-
   const getIncorrectQuestions = useCallback((): Question[] => {
-    const incorrectQuestionIds = state.answers
-      .filter((a) => !a.isCorrect)
-      .map((a) => a.questionId);
-    return state.questions.filter((q) => incorrectQuestionIds.includes(q.id));
+    const incorrectIds = new Set(
+      state.answers.filter((a) => !a.isCorrect).map((a) => a.questionId)
+    );
+    return state.questions.filter((q) => incorrectIds.has(q.id));
   }, [state.answers, state.questions]);
 
   const initializeWeakPointQuiz = useCallback(
-    (quizSessions: QuizSession[], allQuestions: Question[]) => {
-      const incorrectQuestionIds = new Set<string>();
-      quizSessions.forEach((session) => {
+    (sessions: QuizSession[], allQuestions: Question[]) => {
+      const incorrectIds = new Set<string>();
+      sessions.forEach((session) => {
         session.answers.forEach((answer) => {
           if (!answer.isCorrect) {
-            incorrectQuestionIds.add(answer.questionId);
+            incorrectIds.add(answer.questionId);
           }
         });
       });
 
-      const weakPointQuestions = Array.from(incorrectQuestionIds)
-        .map((id) => allQuestions.find((q) => q.id === id))
-        .filter((q): q is Question => q !== undefined)
+      const weakPointQuestions = allQuestions.filter((q) => incorrectIds.has(q.id));
+      const selectedQuestions = weakPointQuestions
         .sort(() => Math.random() - 0.5)
         .slice(0, 20);
 
-      if (weakPointQuestions.length > 0) {
-        dispatch({ type: 'INITIALIZE', payload: weakPointQuestions, mode: 'weak-point' });
-      }
+      dispatch({ type: 'INITIALIZE', payload: selectedQuestions, mode: 'weak-point' });
     },
     []
   );
 
-  const initializeCategoryQuiz = useCallback(
-    (category: string, allQuestions: Question[]) => {
-      const categoryQuestions = allQuestions
-        .filter((q) => q.category === category)
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 20);
+  const initializeCategoryQuiz = useCallback((category: string, allQuestions: Question[]) => {
+    const categoryQuestions = allQuestions.filter((q) => q.category === category);
+    const selectedQuestions = categoryQuestions
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 20);
 
-      if (categoryQuestions.length > 0) {
-        dispatch({ type: 'INITIALIZE', payload: categoryQuestions, mode: 'category' });
-        setSelectedCategory(category);
-      }
-    },
-    []
-  );
+    dispatch({ type: 'INITIALIZE', payload: selectedQuestions, mode: 'category' });
+  }, []);
 
   const loadServerResults = useCallback(async () => {
-    // Server results will be loaded from tRPC in result.tsx
+    try {
+      const stored = await AsyncStorage.getItem('serverResults');
+      const results = stored ? JSON.parse(stored) : [];
+      setServerResults(results);
+    } catch (error) {
+      console.error('Failed to load server results:', error);
+    }
   }, []);
+
+  useEffect(() => {
+    loadSessions();
+  }, [loadSessions]);
 
   useEffect(() => {
     loadServerResults();
@@ -244,6 +255,7 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
     state,
     initializeQuiz,
     selectAnswer,
+    toggleMultipleAnswer,
     submitAnswer,
     nextQuestion,
     completeQuiz,
