@@ -15,6 +15,9 @@ interface QuizContextType {
   getCategoryStats: (sessions: QuizSession[]) => CategoryStats[];
   getIncorrectQuestions: () => Question[];
   initializeWeakPointQuiz: (sessions: QuizSession[], allQuestions: Question[]) => void;
+  selectedCategory: string | null;
+  setSelectedCategory: (category: string | null) => void;
+  initializeCategoryQuiz: (category: string, allQuestions: Question[]) => void;
 }
 
 const QuizContext = createContext<QuizContextType | undefined>(undefined);
@@ -91,6 +94,7 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
 export function QuizProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(quizReducer, initialState);
   const [sessions, setSessions] = React.useState<QuizSession[]>([]);
+  const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
 
   const initializeQuiz = useCallback((questions: Question[], mode: 'normal' | 'weak-point' = 'normal') => {
     dispatch({ type: 'INITIALIZE', payload: questions, mode });
@@ -206,6 +210,21 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const initializeCategoryQuiz = useCallback(
+    (category: string, allQuestions: Question[]) => {
+      const categoryQuestions = allQuestions
+        .filter((q) => q.category === category)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 20);
+
+      if (categoryQuestions.length > 0) {
+        dispatch({ type: 'INITIALIZE', payload: categoryQuestions, mode: 'normal' });
+        setSelectedCategory(category);
+      }
+    },
+    []
+  );
+
   const value: QuizContextType = {
     state,
     initializeQuiz,
@@ -219,6 +238,9 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
     getCategoryStats,
     getIncorrectQuestions,
     initializeWeakPointQuiz,
+    selectedCategory,
+    setSelectedCategory,
+    initializeCategoryQuiz,
   };
 
   return <QuizContext.Provider value={value}>{children}</QuizContext.Provider>;
