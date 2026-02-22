@@ -1,4 +1,4 @@
-import { ScrollView, Text, View, Pressable } from 'react-native';
+import { ScrollView, Text, View, Pressable, FlatList } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useRouter } from 'expo-router';
 import { useQuiz } from '@/lib/quiz-context';
@@ -7,6 +7,18 @@ import { useEffect, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import questions from '@/lib/questions.json';
 import type { Question } from '@/lib/types';
+
+const CATEGORIES = [
+  'セキュリティとアクセス',
+  'セールス&マーケティングアプリケーション',
+  'データ管理',
+  '分析とレポート',
+  '標準・カスタムオブジェクト',
+  '生産性とコラボレーション',
+  'サービス&サポート',
+  'その他',
+  '組織の設定',
+];
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -33,12 +45,30 @@ export default function HomeScreen() {
 
   const handleStartQuiz = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const { selectedCertification } = useQuiz();
+    const filteredQuestions = (questions as Question[]).filter(
+      (q) => q.certification === selectedCertification
+    );
+    router.push('/(tabs)/quiz');
+  };
+
+  const handleStartCategoryQuiz = (category: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const { initializeCategoryQuiz, selectedCertification } = useQuiz();
+    const filteredQuestions = (questions as Question[]).filter(
+      (q) => q.certification === selectedCertification
+    );
+    initializeCategoryQuiz(category, filteredQuestions);
     router.push('/(tabs)/quiz');
   };
 
   const handleStartWeakPointQuiz = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    initializeWeakPointQuiz(sessions, questions as Question[]);
+    const { selectedCertification } = useQuiz();
+    const filteredQuestions = (questions as Question[]).filter(
+      (q) => q.certification === selectedCertification
+    );
+    initializeWeakPointQuiz(sessions, filteredQuestions);
     router.push('/(tabs)/quiz');
   };
 
@@ -113,6 +143,34 @@ export default function HomeScreen() {
             </View>
           </Pressable>
         )}
+
+        {/* カテゴリ別クイズセクション */}
+        <View className="mb-6">
+          <Text className="text-lg font-bold text-foreground mb-4">
+            📚 カテゴリから学ぶ
+          </Text>
+          <View className="gap-2">
+            {CATEGORIES.map((category) => (
+              <Pressable
+                key={category}
+                onPress={() => handleStartCategoryQuiz(category)}
+                style={({ pressed }) => [
+                  {
+                    opacity: pressed ? 0.9 : 1,
+                    transform: [{ scale: pressed ? 0.97 : 1 }],
+                  },
+                ]}
+              >
+                <View className="bg-surface border border-border rounded-lg p-4 flex-row justify-between items-center">
+                  <Text className="text-sm font-semibold text-foreground flex-1">
+                    {category}
+                  </Text>
+                  <Text className="text-lg text-primary">→</Text>
+                </View>
+              </Pressable>
+            ))}
+          </View>
+        </View>
 
         {/* 統計情報 */}
         {totalSessions > 0 ? (

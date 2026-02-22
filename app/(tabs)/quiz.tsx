@@ -87,6 +87,11 @@ export default function QuizScreen() {
             <Text className="text-xs font-bold text-warning">🎯 苦手克服モード</Text>
           </View>
         )}
+        {state.mode === 'category' && (
+          <View className="bg-primary/20 border border-primary rounded-lg p-2 mb-4 flex-row items-center">
+            <Text className="text-xs font-bold text-primary">📚 カテゴリ別クイズ</Text>
+          </View>
+        )}
 
         {/* プログレスバー */}
         <View className="mb-6">

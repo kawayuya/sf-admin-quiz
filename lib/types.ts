@@ -4,11 +4,21 @@
 
 export interface Question {
   id: string;
+  certification: string; // e.g., 'Administrator', 'Platform Developer'
   category: string;
   text: string;
   options: string[];
   correctAnswerIndex: number;
   explanation: string;
+}
+
+export interface Certification {
+  id: string;
+  name: string; // e.g., 'Salesforce 認定アドミニストレーター'
+  slug: string; // e.g., 'administrator'
+  description: string;
+  icon?: string;
+  questionCount: number;
 }
 
 export interface QuizSession {
@@ -43,7 +53,7 @@ export interface QuizState {
   }[];
   isQuizComplete: boolean;
   score: number;
-  mode: 'normal' | 'weak-point';
+  mode: 'normal' | 'weak-point' | 'category';
 }
 
 // Server sync types

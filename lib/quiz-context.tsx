@@ -18,6 +18,8 @@ interface QuizContextType {
   selectedCategory: string | null;
   setSelectedCategory: (category: string | null) => void;
   initializeCategoryQuiz: (category: string, allQuestions: Question[]) => void;
+  selectedCertification: string | null;
+  setSelectedCertification: (certification: string | null) => void;
   serverResults: ServerQuizResult[];
   loadServerResults: () => Promise<void>;
 }
@@ -25,7 +27,7 @@ interface QuizContextType {
 const QuizContext = createContext<QuizContextType | undefined>(undefined);
 
 type QuizAction =
-  | { type: 'INITIALIZE'; payload: Question[]; mode?: 'normal' | 'weak-point' }
+  | { type: 'INITIALIZE'; payload: Question[]; mode?: 'normal' | 'weak-point' | 'category' }
   | { type: 'SELECT_ANSWER'; payload: number }
   | { type: 'SUBMIT_ANSWER' }
   | { type: 'NEXT_QUESTION' }
@@ -97,6 +99,7 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(quizReducer, initialState);
   const [sessions, setSessions] = React.useState<QuizSession[]>([]);
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
+  const [selectedCertification, setSelectedCertification] = React.useState<string | null>('Administrator');
   const [serverResults, setServerResults] = React.useState<ServerQuizResult[]>([]);
 
   const initializeQuiz = useCallback((questions: Question[], mode: 'normal' | 'weak-point' = 'normal') => {
@@ -222,7 +225,7 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
         .slice(0, 20);
 
       if (categoryQuestions.length > 0) {
-        dispatch({ type: 'INITIALIZE', payload: categoryQuestions, mode: 'normal' });
+        dispatch({ type: 'INITIALIZE', payload: categoryQuestions, mode: 'category' });
         setSelectedCategory(category);
       }
     },
@@ -253,6 +256,8 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
     selectedCategory,
     setSelectedCategory,
     initializeCategoryQuiz,
+    selectedCertification,
+    setSelectedCertification,
     serverResults,
     loadServerResults,
   };

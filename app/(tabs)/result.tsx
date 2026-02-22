@@ -96,6 +96,11 @@ export default function ResultScreen() {
             <Text className="text-xs font-bold text-warning">🎯 苦手克服モードの結果</Text>
           </View>
         )}
+        {state.mode === 'category' && (
+          <View className="bg-primary/20 border border-primary rounded-lg p-2 mb-4 flex-row items-center">
+            <Text className="text-xs font-bold text-primary">📚 カテゴリ別クイズの結果</Text>
+          </View>
+        )}
 
         <View className="items-center gap-4 mb-8 mt-8">
           <Text className="text-5xl font-bold text-primary">

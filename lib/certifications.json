@@ -1,0 +1,34 @@
+[
+  {
+    "id": "admin",
+    "name": "Salesforce 認定アドミニストレーター",
+    "slug": "administrator",
+    "description": "Salesforce の基本的な管理と設定に関する知識を測定する試験",
+    "icon": "👨‍💼",
+    "questionCount": 250
+  },
+  {
+    "id": "dev",
+    "name": "Salesforce 認定 Platform Developer I",
+    "slug": "platform-developer-i",
+    "description": "Apex、Visualforce、Lightning Component などの開発スキルを測定する試験",
+    "icon": "👨‍💻",
+    "questionCount": 0
+  },
+  {
+    "id": "sales-cloud",
+    "name": "Salesforce 認定 Sales Cloud Consultant",
+    "slug": "sales-cloud-consultant",
+    "description": "Sales Cloud の実装と運用に関する知識を測定する試験",
+    "icon": "📈",
+    "questionCount": 0
+  },
+  {
+    "id": "service-cloud",
+    "name": "Salesforce 認定 Service Cloud Consultant",
+    "slug": "service-cloud-consultant",
+    "description": "Service Cloud の実装と運用に関する知識を測定する試験",
+    "icon": "🎧",
+    "questionCount": 0
+  }
+]

@@ -5,6 +5,7 @@ import type { Question, QuizSession } from './types';
 const mockQuestions: Question[] = [
   {
     id: 'q1',
+    certification: 'Administrator',
     category: 'セキュリティとアクセス',
     text: 'テスト問題1',
     options: ['A', 'B', 'C', 'D'],
@@ -13,6 +14,7 @@ const mockQuestions: Question[] = [
   },
   {
     id: 'q2',
+    certification: 'Administrator',
     category: 'セールス&マーケティングアプリケーション',
     text: 'テスト問題2',
     options: ['A', 'B', 'C'],
