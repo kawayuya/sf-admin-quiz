@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { QuizState, Question, QuizSession, CategoryStats } from './types';
+import { QuizState, Question, QuizSession, CategoryStats, ServerQuizResult } from './types';
 
 interface QuizContextType {
   state: QuizState;
@@ -8,7 +8,7 @@ interface QuizContextType {
   selectAnswer: (index: number) => void;
   submitAnswer: () => void;
   nextQuestion: () => void;
-  completeQuiz: () => void;
+  completeQuiz: () => Promise<void>;
   resetQuiz: () => void;
   sessions: QuizSession[];
   loadSessions: () => Promise<void>;
@@ -18,6 +18,8 @@ interface QuizContextType {
   selectedCategory: string | null;
   setSelectedCategory: (category: string | null) => void;
   initializeCategoryQuiz: (category: string, allQuestions: Question[]) => void;
+  serverResults: ServerQuizResult[];
+  loadServerResults: () => Promise<void>;
 }
 
 const QuizContext = createContext<QuizContextType | undefined>(undefined);
@@ -95,6 +97,7 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(quizReducer, initialState);
   const [sessions, setSessions] = React.useState<QuizSession[]>([]);
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
+  const [serverResults, setServerResults] = React.useState<ServerQuizResult[]>([]);
 
   const initializeQuiz = useCallback((questions: Question[], mode: 'normal' | 'weak-point' = 'normal') => {
     dispatch({ type: 'INITIALIZE', payload: questions, mode });
@@ -120,8 +123,9 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
     }
   }, [state.currentQuestionIndex, state.questions.length]);
 
-  const completeQuiz = useCallback(() => {
+  const completeQuiz = useCallback(async () => {
     dispatch({ type: 'COMPLETE_QUIZ' });
+    // Server sync will be handled in the component that calls this
   }, []);
 
   const resetQuiz = useCallback(() => {
@@ -225,6 +229,14 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const loadServerResults = useCallback(async () => {
+    // Server results will be loaded from tRPC in result.tsx
+  }, []);
+
+  useEffect(() => {
+    loadServerResults();
+  }, [loadServerResults]);
+
   const value: QuizContextType = {
     state,
     initializeQuiz,
@@ -241,6 +253,8 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
     selectedCategory,
     setSelectedCategory,
     initializeCategoryQuiz,
+    serverResults,
+    loadServerResults,
   };
 
   return <QuizContext.Provider value={value}>{children}</QuizContext.Provider>;

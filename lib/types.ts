@@ -46,6 +46,22 @@ export interface QuizState {
   mode: 'normal' | 'weak-point';
 }
 
+// Server sync types
+export interface ServerQuizResult {
+  id: number;
+  userId: number;
+  mode: 'normal' | 'weakPoints';
+  selectedCategories: string[] | null;
+  totalQuestions: number;
+  correctAnswers: number;
+  score: number;
+  categoryResults: Record<string, { correct: number; total: number }>;
+  wrongQuestionIds: number[];
+  timeSpent: number | null;
+  completedAt: Date;
+  createdAt: Date;
+}
+
 export interface WeakPointSession {
   id: string;
   createdAt: number;

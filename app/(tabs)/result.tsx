@@ -7,14 +7,17 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { QuizSession } from '@/lib/types';
 import * as Haptics from 'expo-haptics';
+import { useAuth } from '@/hooks/use-auth';
+import { trpc } from '@/lib/trpc';
 
 export default function ResultScreen() {
   const router = useRouter();
   const colors = useColors();
   const { state, resetQuiz, sessions, loadSessions, getCategoryStats } = useQuiz();
+  const { isAuthenticated } = useAuth();
+  const saveResultMutation = trpc.quiz.saveResult.useMutation();
 
   useEffect(() => {
-    // セッションを保存
     saveSession();
   }, []);
 
@@ -30,10 +33,39 @@ export default function ResultScreen() {
       };
 
       const stored = await AsyncStorage.getItem('quizSessions');
-      const sessions = stored ? JSON.parse(stored) : [];
-      sessions.push(session);
-      await AsyncStorage.setItem('quizSessions', JSON.stringify(sessions));
+      const sessionsList = stored ? JSON.parse(stored) : [];
+      sessionsList.push(session);
+      await AsyncStorage.setItem('quizSessions', JSON.stringify(sessionsList));
       await loadSessions();
+
+      if (isAuthenticated) {
+        const categoryResults: Record<string, { correct: number; total: number }> = {};
+        state.answers.forEach((answer) => {
+          const question = state.questions.find((q) => q.id === answer.questionId);
+          if (question) {
+            if (!categoryResults[question.category]) {
+              categoryResults[question.category] = { correct: 0, total: 0 };
+            }
+            categoryResults[question.category].total++;
+            if (answer.isCorrect) {
+              categoryResults[question.category].correct++;
+            }
+          }
+        });
+
+        const wrongQuestionIds = state.answers
+          .filter((a) => !a.isCorrect)
+          .map((a) => parseInt(a.questionId, 10));
+
+        await saveResultMutation.mutateAsync({
+          mode: state.mode === 'weak-point' ? 'weakPoints' : 'normal',
+          totalQuestions: state.questions.length,
+          correctAnswers: state.score,
+          score: Math.round((state.score / state.questions.length) * 100),
+          categoryResults,
+          wrongQuestionIds,
+        });
+      }
     } catch (error) {
       console.error('Failed to save session:', error);
     }
@@ -42,7 +74,6 @@ export default function ResultScreen() {
   const categoryStats = getCategoryStats(sessions);
   const percentage = Math.round((state.score / state.questions.length) * 100);
 
-  // 弱点カテゴリを抽出（正解率が低い順）
   const weakCategories = categoryStats
     .sort((a, b) => a.percentage - b.percentage)
     .slice(0, 3);
@@ -60,14 +91,12 @@ export default function ResultScreen() {
   return (
     <ScreenContainer className="p-4">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-        {/* モード表示 */}
         {state.mode === 'weak-point' && (
           <View className="bg-warning/20 border border-warning rounded-lg p-2 mb-4 flex-row items-center">
             <Text className="text-xs font-bold text-warning">🎯 苦手克服モードの結果</Text>
           </View>
         )}
 
-        {/* スコア表示 */}
         <View className="items-center gap-4 mb-8 mt-8">
           <Text className="text-5xl font-bold text-primary">
             {state.score}/{state.questions.length}
@@ -80,7 +109,6 @@ export default function ResultScreen() {
           </Text>
         </View>
 
-        {/* スコア評価 */}
         <View className="bg-surface rounded-xl p-6 mb-6 border border-border">
           <View className="h-2 bg-border rounded-full overflow-hidden mb-4">
             <View
@@ -108,7 +136,6 @@ export default function ResultScreen() {
           </View>
         </View>
 
-        {/* カテゴリ別正解率 */}
         <View className="mb-6">
           <Text className="text-lg font-bold text-foreground mb-4">
             カテゴリ別の成績
@@ -150,7 +177,6 @@ export default function ResultScreen() {
           </View>
         </View>
 
-        {/* 弱点分析 */}
         {weakCategories.length > 0 && (
           <View className="mb-6 bg-warning/10 rounded-lg p-4 border border-warning/30">
             <Text className="font-bold text-warning mb-3">
@@ -169,7 +195,6 @@ export default function ResultScreen() {
           </View>
         )}
 
-        {/* ボタン */}
         <View className="gap-3 mt-auto">
           <Pressable
             onPress={handleRetry}

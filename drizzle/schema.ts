@@ -25,4 +25,21 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// TODO: Add your tables here
+// Quiz results table
+export const quizResults = mysqlTable("quizResults", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  mode: varchar("mode", { length: 50 }).default("normal").notNull(),
+  selectedCategories: text("selectedCategories"),
+  totalQuestions: int("totalQuestions").notNull(),
+  correctAnswers: int("correctAnswers").notNull(),
+  score: int("score").notNull(),
+  categoryResults: text("categoryResults"),
+  wrongQuestionIds: text("wrongQuestionIds"),
+  timeSpent: int("timeSpent"),
+  completedAt: timestamp("completedAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type QuizResult = typeof quizResults.$inferSelect;
+export type InsertQuizResult = typeof quizResults.$inferInsert;
