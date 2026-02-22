@@ -60,6 +60,13 @@ export default function ResultScreen() {
   return (
     <ScreenContainer className="p-4">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+        {/* モード表示 */}
+        {state.mode === 'weak-point' && (
+          <View className="bg-warning/20 border border-warning rounded-lg p-2 mb-4 flex-row items-center">
+            <Text className="text-xs font-bold text-warning">🎯 苦手克服モードの結果</Text>
+          </View>
+        )}
+
         {/* スコア表示 */}
         <View className="items-center gap-4 mb-8 mt-8">
           <Text className="text-5xl font-bold text-primary">

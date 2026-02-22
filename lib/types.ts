@@ -43,4 +43,12 @@ export interface QuizState {
   }[];
   isQuizComplete: boolean;
   score: number;
+  mode: 'normal' | 'weak-point';
+}
+
+export interface WeakPointSession {
+  id: string;
+  createdAt: number;
+  incorrectQuestionIds: string[];
+  sessionId: string;
 }

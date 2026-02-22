@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { ScrollView, Text, View, Pressable, ActivityIndicator } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useQuiz } from '@/lib/quiz-context';
@@ -13,13 +13,33 @@ export default function QuizScreen() {
   const colors = useColors();
   const { state, initializeQuiz, selectAnswer, submitAnswer, nextQuestion, completeQuiz } = useQuiz();
   const [isLoading, setIsLoading] = useState(true);
+  const navigationRef = useRef<boolean>(false);
 
-  // クイズを初期化（ランダムに20問を選択）
+  // クイズを初期化（ランダムに20問を選択 or 苦手克服モード）
   useEffect(() => {
+    // 既にクイズが初期化されている場合（苦手克服モード）はスキップ
+    if (state.questions.length > 0) {
+      setIsLoading(false);
+      return;
+    }
+    
+    // 通常モード：ランダムに20問を選択
     const shuffled = [...questions].sort(() => Math.random() - 0.5).slice(0, 20);
     initializeQuiz(shuffled as Question[]);
     setIsLoading(false);
-  }, [initializeQuiz]);
+  }, [initializeQuiz, state.questions.length]);
+
+  // クイズ完了時の処理
+  useEffect(() => {
+    if (state.isQuizComplete && !navigationRef.current) {
+      navigationRef.current = true;
+      // 非同期で遷移を実行
+      const timer = setTimeout(() => {
+        router.push('/(tabs)/result');
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [state.isQuizComplete, router]);
 
   if (isLoading || state.questions.length === 0) {
     return (
@@ -27,12 +47,6 @@ export default function QuizScreen() {
         <ActivityIndicator size="large" color={colors.primary} />
       </ScreenContainer>
     );
-  }
-
-  if (state.isQuizComplete) {
-    // 結果画面へ遷移
-    router.push('/(tabs)/result');
-    return null;
   }
 
   const currentQuestion = state.questions[state.currentQuestionIndex];
@@ -46,9 +60,9 @@ export default function QuizScreen() {
   const handleSubmit = () => {
     if (state.selectedAnswerIndex !== null) {
       submitAnswer();
+      const isCorrect = state.selectedAnswerIndex === currentQuestion.correctAnswerIndex;
       Haptics.notificationAsync(
-        state.answers[state.answers.length] && 
-        state.answers[state.answers.length].isCorrect
+        isCorrect
           ? Haptics.NotificationFeedbackType.Success
           : Haptics.NotificationFeedbackType.Warning
       );
@@ -67,6 +81,13 @@ export default function QuizScreen() {
   return (
     <ScreenContainer className="p-4">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+        {/* モード表示 */}
+        {state.mode === 'weak-point' && (
+          <View className="bg-warning/20 border border-warning rounded-lg p-2 mb-4 flex-row items-center">
+            <Text className="text-xs font-bold text-warning">🎯 苦手克服モード</Text>
+          </View>
+        )}
+
         {/* プログレスバー */}
         <View className="mb-6">
           <View className="flex-row items-center justify-between mb-2">
@@ -158,7 +179,7 @@ export default function QuizScreen() {
         {state.hasAnswered && (
           <View className={`rounded-lg p-4 mb-6 ${isCorrect ? 'bg-success/10' : 'bg-error/10'}`}>
             <Text className={`font-bold text-base mb-2 ${isCorrect ? 'text-success' : 'text-error'}`}>
-              {isCorrect ? '正解！' : '不正解'}
+              {isCorrect ? '✓ 正解！' : '✗ 不正解'}
             </Text>
             <Text className="text-sm text-foreground leading-relaxed">
               {currentQuestion.explanation}

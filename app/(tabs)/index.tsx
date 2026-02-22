@@ -3,20 +3,42 @@ import { ScreenContainer } from '@/components/screen-container';
 import { useRouter } from 'expo-router';
 import { useQuiz } from '@/lib/quiz-context';
 import { useColors } from '@/hooks/use-colors';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import * as Haptics from 'expo-haptics';
+import questions from '@/lib/questions.json';
+import type { Question } from '@/lib/types';
 
 export default function HomeScreen() {
   const router = useRouter();
   const colors = useColors();
-  const { sessions, loadSessions, getCategoryStats } = useQuiz();
+  const { sessions, loadSessions, getCategoryStats, initializeWeakPointQuiz } = useQuiz();
+  const [incorrectCount, setIncorrectCount] = useState(0);
 
   useEffect(() => {
     loadSessions();
   }, []);
 
+  useEffect(() => {
+    // 不正解問題の数を計算
+    let count = 0;
+    sessions.forEach((session) => {
+      session.answers.forEach((answer) => {
+        if (!answer.isCorrect) {
+          count++;
+        }
+      });
+    });
+    setIncorrectCount(count);
+  }, [sessions]);
+
   const handleStartQuiz = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push('/(tabs)/quiz');
+  };
+
+  const handleStartWeakPointQuiz = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    initializeWeakPointQuiz(sessions, questions as Question[]);
     router.push('/(tabs)/quiz');
   };
 
@@ -45,7 +67,7 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        {/* メインCTA */}
+        {/* メインCTA - 通常モード */}
         <Pressable
           onPress={handleStartQuiz}
           style={({ pressed }) => [
@@ -55,7 +77,7 @@ export default function HomeScreen() {
             },
           ]}
         >
-          <View className="bg-primary rounded-2xl p-8 items-center justify-center mb-8">
+          <View className="bg-primary rounded-2xl p-8 items-center justify-center mb-4">
             <Text className="text-5xl mb-3">📚</Text>
             <Text className="text-2xl font-bold text-background mb-2">
               クイズを始める
@@ -65,6 +87,32 @@ export default function HomeScreen() {
             </Text>
           </View>
         </Pressable>
+
+        {/* 苦手克服モード CTA */}
+        {incorrectCount > 0 && (
+          <Pressable
+            onPress={handleStartWeakPointQuiz}
+            style={({ pressed }) => [
+              {
+                opacity: pressed ? 0.9 : 1,
+                transform: [{ scale: pressed ? 0.97 : 1 }],
+              },
+            ]}
+          >
+            <View className="bg-warning/20 border-2 border-warning rounded-2xl p-6 items-center justify-center mb-8">
+              <Text className="text-4xl mb-2">🎯</Text>
+              <Text className="text-xl font-bold text-warning mb-1">
+                苦手克服モード
+              </Text>
+              <Text className="text-sm text-warning/80 mb-2">
+                不正解だった{incorrectCount}問を復習
+              </Text>
+              <Text className="text-xs text-warning/60">
+                タップして開始
+              </Text>
+            </View>
+          </Pressable>
+        )}
 
         {/* 統計情報 */}
         {totalSessions > 0 ? (

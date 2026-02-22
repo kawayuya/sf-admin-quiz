@@ -4,7 +4,7 @@ import { QuizState, Question, QuizSession, CategoryStats } from './types';
 
 interface QuizContextType {
   state: QuizState;
-  initializeQuiz: (questions: Question[]) => void;
+  initializeQuiz: (questions: Question[], mode?: 'normal' | 'weak-point') => void;
   selectAnswer: (index: number) => void;
   submitAnswer: () => void;
   nextQuestion: () => void;
@@ -13,12 +13,14 @@ interface QuizContextType {
   sessions: QuizSession[];
   loadSessions: () => Promise<void>;
   getCategoryStats: (sessions: QuizSession[]) => CategoryStats[];
+  getIncorrectQuestions: () => Question[];
+  initializeWeakPointQuiz: (sessions: QuizSession[], allQuestions: Question[]) => void;
 }
 
 const QuizContext = createContext<QuizContextType | undefined>(undefined);
 
 type QuizAction =
-  | { type: 'INITIALIZE'; payload: Question[] }
+  | { type: 'INITIALIZE'; payload: Question[]; mode?: 'normal' | 'weak-point' }
   | { type: 'SELECT_ANSWER'; payload: number }
   | { type: 'SUBMIT_ANSWER' }
   | { type: 'NEXT_QUESTION' }
@@ -33,6 +35,7 @@ const initialState: QuizState = {
   answers: [],
   isQuizComplete: false,
   score: 0,
+  mode: 'normal',
 };
 
 function quizReducer(state: QuizState, action: QuizAction): QuizState {
@@ -41,6 +44,7 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
       return {
         ...initialState,
         questions: action.payload,
+        mode: action.mode || 'normal',
       };
     case 'SELECT_ANSWER':
       return {
@@ -88,8 +92,8 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(quizReducer, initialState);
   const [sessions, setSessions] = React.useState<QuizSession[]>([]);
 
-  const initializeQuiz = useCallback((questions: Question[]) => {
-    dispatch({ type: 'INITIALIZE', payload: questions });
+  const initializeQuiz = useCallback((questions: Question[], mode: 'normal' | 'weak-point' = 'normal') => {
+    dispatch({ type: 'INITIALIZE', payload: questions, mode });
   }, []);
 
   const selectAnswer = useCallback((index: number) => {
@@ -171,6 +175,37 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
     loadSessions();
   }, [loadSessions]);
 
+  const getIncorrectQuestions = useCallback((): Question[] => {
+    const incorrectQuestionIds = state.answers
+      .filter((a) => !a.isCorrect)
+      .map((a) => a.questionId);
+    return state.questions.filter((q) => incorrectQuestionIds.includes(q.id));
+  }, [state.answers, state.questions]);
+
+  const initializeWeakPointQuiz = useCallback(
+    (quizSessions: QuizSession[], allQuestions: Question[]) => {
+      const incorrectQuestionIds = new Set<string>();
+      quizSessions.forEach((session) => {
+        session.answers.forEach((answer) => {
+          if (!answer.isCorrect) {
+            incorrectQuestionIds.add(answer.questionId);
+          }
+        });
+      });
+
+      const weakPointQuestions = Array.from(incorrectQuestionIds)
+        .map((id) => allQuestions.find((q) => q.id === id))
+        .filter((q): q is Question => q !== undefined)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 20);
+
+      if (weakPointQuestions.length > 0) {
+        dispatch({ type: 'INITIALIZE', payload: weakPointQuestions, mode: 'weak-point' });
+      }
+    },
+    []
+  );
+
   const value: QuizContextType = {
     state,
     initializeQuiz,
@@ -182,6 +217,8 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
     sessions,
     loadSessions,
     getCategoryStats,
+    getIncorrectQuestions,
+    initializeWeakPointQuiz,
   };
 
   return <QuizContext.Provider value={value}>{children}</QuizContext.Provider>;
