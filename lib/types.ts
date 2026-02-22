@@ -8,8 +8,7 @@ export interface Question {
   category: string;
   text: string;
   options: string[];
-  correctAnswerIndex: number | number[]; // Single: number, Multiple: number[]
-  isMultipleChoice?: boolean; // true if multiple answers are correct
+  correctAnswerIndex: number;
   explanation: string;
 }
 
@@ -28,7 +27,7 @@ export interface QuizSession {
   completedAt?: number;
   answers: {
     questionId: string;
-    selectedIndex: number | number[];
+    selectedIndex: number;
     isCorrect: boolean;
   }[];
   score: number;
@@ -45,12 +44,11 @@ export interface CategoryStats {
 export interface QuizState {
   currentQuestionIndex: number;
   selectedAnswerIndex: number | null;
-  selectedAnswerIndices: number[]; // For multiple choice questions
   hasAnswered: boolean;
   questions: Question[];
   answers: {
     questionId: string;
-    selectedIndex: number | number[]; // Single or multiple
+    selectedIndex: number;
     isCorrect: boolean;
   }[];
   isQuizComplete: boolean;

@@ -11,7 +11,7 @@ import { useRouter } from 'expo-router';
 export default function QuizScreen() {
   const router = useRouter();
   const colors = useColors();
-  const { state, initializeQuiz, selectAnswer, toggleMultipleAnswer, submitAnswer, nextQuestion, completeQuiz } = useQuiz();
+  const { state, initializeQuiz, selectAnswer, submitAnswer, nextQuestion, completeQuiz } = useQuiz();
   const [isLoading, setIsLoading] = useState(true);
   const navigationRef = useRef<boolean>(false);
 
@@ -53,23 +53,14 @@ export default function QuizScreen() {
   const progress = ((state.currentQuestionIndex + 1) / state.questions.length) * 100;
 
   const handleSelectAnswer = (index: number) => {
-    if (currentQuestion.isMultipleChoice) {
-      toggleMultipleAnswer(index);
-    } else {
-      selectAnswer(index);
-    }
+    selectAnswer(index);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const handleSubmit = () => {
-    const canSubmit = currentQuestion.isMultipleChoice
-      ? state.selectedAnswerIndices.length > 0
-      : state.selectedAnswerIndex !== null;
-
-    if (canSubmit) {
+    if (state.selectedAnswerIndex !== null) {
       submitAnswer();
-      const lastAnswer = state.answers[state.answers.length - 1];
-      const isCorrect = lastAnswer?.isCorrect ?? false;
+      const isCorrect = state.selectedAnswerIndex === currentQuestion.correctAnswerIndex;
       Haptics.notificationAsync(
         isCorrect
           ? Haptics.NotificationFeedbackType.Success
@@ -134,25 +125,11 @@ export default function QuizScreen() {
           </Text>
         </View>
 
-        {/* 複数選択問題の場合の説明 */}
-        {currentQuestion.isMultipleChoice && !state.hasAnswered && (
-          <View className="bg-primary/10 border border-primary rounded-lg p-3 mb-4">
-            <Text className="text-xs font-semibold text-primary">
-              💡 複数の正解があります。すべて選択してください。
-            </Text>
-          </View>
-        )}
-
         {/* 選択肢 */}
         <View className="gap-3 mb-6">
           {currentQuestion.options.map((option, index) => {
-            const isSelected = currentQuestion.isMultipleChoice
-              ? state.selectedAnswerIndices.includes(index)
-              : state.selectedAnswerIndex === index;
-            const correctAnswerIndices = Array.isArray(currentQuestion.correctAnswerIndex)
-              ? currentQuestion.correctAnswerIndex
-              : [currentQuestion.correctAnswerIndex];
-            const isCorrectAnswer = correctAnswerIndices.includes(index);
+            const isSelected = state.selectedAnswerIndex === index;
+            const isCorrectAnswer = index === currentQuestion.correctAnswerIndex;
             const showResult = state.hasAnswered;
 
             let bgColor = 'bg-surface border-border';
@@ -183,17 +160,11 @@ export default function QuizScreen() {
                 ]}
               >
                 <View className={`border-2 rounded-lg p-4 flex-row items-start gap-3 ${bgColor}`}>
-                  {currentQuestion.isMultipleChoice ? (
-                    <View className={`w-6 h-6 rounded border-2 border-current items-center justify-center ${textColor}`}>
-                      {isSelected && <Text className={`font-bold ${textColor}`}>✓</Text>}
-                    </View>
-                  ) : (
-                    <View className={`w-8 h-8 rounded-full border-2 border-current items-center justify-center ${textColor}`}>
-                      <Text className={`font-bold ${textColor}`}>
-                        {String.fromCharCode(65 + index)}
-                      </Text>
-                    </View>
-                  )}
+                  <View className={`w-8 h-8 rounded-full border-2 border-current items-center justify-center ${textColor}`}>
+                    <Text className={`font-bold ${textColor}`}>
+                      {String.fromCharCode(65 + index)}
+                    </Text>
+                  </View>
                   <Text className={`flex-1 text-base leading-relaxed ${textColor}`}>
                     {option}
                   </Text>
@@ -226,7 +197,7 @@ export default function QuizScreen() {
           {!state.hasAnswered ? (
             <Pressable
               onPress={handleSubmit}
-              disabled={currentQuestion.isMultipleChoice ? state.selectedAnswerIndices.length === 0 : state.selectedAnswerIndex === null}
+              disabled={state.selectedAnswerIndex === null}
               style={({ pressed }) => [
                 {
                   opacity: pressed ? 0.9 : 1,
@@ -236,22 +207,14 @@ export default function QuizScreen() {
             >
               <View
                 className={`py-4 rounded-lg items-center justify-center ${
-                  currentQuestion.isMultipleChoice
-                    ? state.selectedAnswerIndices.length === 0
-                      ? 'bg-muted/30'
-                      : 'bg-primary'
-                    : state.selectedAnswerIndex === null
+                  state.selectedAnswerIndex === null
                     ? 'bg-muted/30'
                     : 'bg-primary'
                 }`}
               >
                 <Text
                   className={`font-bold text-base ${
-                    currentQuestion.isMultipleChoice
-                      ? state.selectedAnswerIndices.length === 0
-                        ? 'text-muted'
-                        : 'text-background'
-                      : state.selectedAnswerIndex === null
+                    state.selectedAnswerIndex === null
                       ? 'text-muted'
                       : 'text-background'
                   }`}
