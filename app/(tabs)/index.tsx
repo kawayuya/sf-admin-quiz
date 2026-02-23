@@ -23,7 +23,7 @@ const CATEGORIES = [
 export default function HomeScreen() {
   const router = useRouter();
   const colors = useColors();
-  const { sessions, loadSessions, getCategoryStats, initializeWeakPointQuiz } = useQuiz();
+  const { sessions, loadSessions, getCategoryStats, initializeWeakPointQuiz, selectedCertification, initializeCategoryQuiz } = useQuiz();
   const [incorrectCount, setIncorrectCount] = useState(0);
 
   useEffect(() => {
@@ -45,7 +45,6 @@ export default function HomeScreen() {
 
   const handleStartQuiz = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const { selectedCertification } = useQuiz();
     const filteredQuestions = (questions as Question[]).filter(
       (q) => q.certification === selectedCertification
     );
@@ -54,7 +53,6 @@ export default function HomeScreen() {
 
   const handleStartCategoryQuiz = (category: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const { initializeCategoryQuiz, selectedCertification } = useQuiz();
     const filteredQuestions = (questions as Question[]).filter(
       (q) => q.certification === selectedCertification
     );
@@ -64,7 +62,6 @@ export default function HomeScreen() {
 
   const handleStartWeakPointQuiz = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const { selectedCertification } = useQuiz();
     const filteredQuestions = (questions as Question[]).filter(
       (q) => q.certification === selectedCertification
     );
@@ -113,7 +110,7 @@ export default function HomeScreen() {
               クイズを始める
             </Text>
             <Text className="text-sm text-background/80">
-              20問出題・即時フィードバック
+              10問出題・即時フィードバック
             </Text>
           </View>
         </Pressable>

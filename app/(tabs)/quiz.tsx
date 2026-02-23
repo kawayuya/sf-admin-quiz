@@ -23,8 +23,8 @@ export default function QuizScreen() {
       return;
     }
     
-    // 通常モード：ランダムに20問を選択
-    const shuffled = [...questions].sort(() => Math.random() - 0.5).slice(0, 20);
+    // 通常モード：ランダムに10問を選択
+    const shuffled = [...questions].sort(() => Math.random() - 0.5).slice(0, 10);
     initializeQuiz(shuffled as Question[]);
     setIsLoading(false);
   }, [initializeQuiz, state.questions.length]);

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
+import { createContext, useContext, useReducer, useCallback, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { QuizState, Question, QuizSession, CategoryStats, ServerQuizResult } from './types';
 
@@ -97,10 +97,10 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
 
 export function QuizProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(quizReducer, initialState);
-  const [sessions, setSessions] = React.useState<QuizSession[]>([]);
-  const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
-  const [selectedCertification, setSelectedCertification] = React.useState<string | null>('Administrator');
-  const [serverResults, setServerResults] = React.useState<ServerQuizResult[]>([]);
+  const [sessions, setSessions] = useState<QuizSession[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCertification, setSelectedCertification] = useState<string | null>('Administrator');
+  const [serverResults, setServerResults] = useState<ServerQuizResult[]>([]);
 
   const initializeQuiz = useCallback((questions: Question[], mode: 'normal' | 'weak-point' = 'normal') => {
     dispatch({ type: 'INITIALIZE', payload: questions, mode });
@@ -208,7 +208,7 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
         .map((id) => allQuestions.find((q) => q.id === id))
         .filter((q): q is Question => q !== undefined)
         .sort(() => Math.random() - 0.5)
-        .slice(0, 20);
+        .slice(0, 10);
 
       if (weakPointQuestions.length > 0) {
         dispatch({ type: 'INITIALIZE', payload: weakPointQuestions, mode: 'weak-point' });
@@ -222,7 +222,7 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
       const categoryQuestions = allQuestions
         .filter((q) => q.category === category)
         .sort(() => Math.random() - 0.5)
-        .slice(0, 20);
+        .slice(0, 10);
 
       if (categoryQuestions.length > 0) {
         dispatch({ type: 'INITIALIZE', payload: categoryQuestions, mode: 'category' });
