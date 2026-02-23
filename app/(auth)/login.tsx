@@ -1,7 +1,15 @@
 import { ScreenContainer } from "@/components/screen-container";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { useColors } from "@/hooks/use-colors";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -9,7 +17,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const colors = useColors();
   const { login } = useAuth();
-  
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -56,85 +64,202 @@ export default function LoginScreen() {
     });
   };
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      justifyContent: "center",
+      paddingHorizontal: 24,
+      paddingVertical: 48,
+    },
+    header: {
+      marginBottom: 32,
+    },
+    title: {
+      fontSize: 32,
+      fontWeight: "700",
+      color: colors.foreground,
+      marginBottom: 8,
+    },
+    subtitle: {
+      fontSize: 14,
+      color: colors.muted,
+    },
+    errorContainer: {
+      backgroundColor: colors.error + "20",
+      borderWidth: 1,
+      borderColor: colors.error,
+      borderRadius: 8,
+      padding: 16,
+      marginBottom: 24,
+    },
+    errorText: {
+      color: colors.error,
+      fontSize: 14,
+    },
+    inputGroup: {
+      marginBottom: 16,
+    },
+    label: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: colors.foreground,
+      marginBottom: 8,
+    },
+    input: {
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderRadius: 8,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      color: colors.foreground,
+      fontSize: 16,
+    },
+    forgotPassword: {
+      marginBottom: 24,
+      alignItems: "flex-end",
+    },
+    forgotPasswordText: {
+      fontSize: 14,
+      fontWeight: "500",
+      color: colors.primary,
+    },
+    loginButton: {
+      paddingHorizontal: 24,
+      paddingVertical: 16,
+      borderRadius: 8,
+      backgroundColor: colors.primary,
+      marginBottom: 24,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+    },
+    loginButtonText: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: colors.background,
+    },
+    signupSection: {
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      paddingTop: 24,
+    },
+    signupLabel: {
+      fontSize: 14,
+      color: colors.muted,
+      textAlign: "center",
+      marginBottom: 12,
+    },
+    signupButton: {
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.primary,
+    },
+    signupButtonText: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: colors.primary,
+      textAlign: "center",
+    },
+  });
+
   return (
-    <ScreenContainer className="justify-center px-6">
-      {/* Title */}
-      <View className="mb-8">
-        <Text className="text-3xl font-bold text-foreground mb-2">ログイン</Text>
-        <Text className="text-sm text-muted">メールアドレスとパスワードでログイン</Text>
-      </View>
-
-      {/* Error Message */}
-      {error && (
-        <View className="bg-error/10 border border-error rounded-lg p-4 mb-6">
-          <Text className="text-error text-sm">{error}</Text>
-        </View>
-      )}
-
-      {/* Email Input */}
-      <View className="mb-4">
-        <Text className="text-sm font-semibold text-foreground mb-2">メールアドレス</Text>
-        <TextInput
-          placeholder="example@example.com"
-          placeholderTextColor={colors.muted}
-          value={email}
-          onChangeText={setEmail}
-          editable={!isLoading}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          className="px-4 py-3 rounded-lg bg-surface border border-border text-foreground"
-          style={{ color: colors.foreground }}
-        />
-      </View>
-
-      {/* Password Input */}
-      <View className="mb-4">
-        <Text className="text-sm font-semibold text-foreground mb-2">パスワード</Text>
-        <TextInput
-          placeholder="••••••••"
-          placeholderTextColor={colors.muted}
-          value={password}
-          onChangeText={setPassword}
-          editable={!isLoading}
-          secureTextEntry
-          className="px-4 py-3 rounded-lg bg-surface border border-border text-foreground"
-          style={{ color: colors.foreground }}
-        />
-      </View>
-
-      {/* Forgot Password Link */}
-      <Pressable onPress={() => router.navigate({ pathname: "/(auth)/forgot-password" })} disabled={isLoading} className="mb-6">
-        <Text className="text-sm font-medium text-primary text-right">パスワードを忘れた場合</Text>
-      </Pressable>
-
-      {/* Login Button */}
-      <Pressable
-        onPress={handleLogin}
-        disabled={isLoading}
-        style={({ pressed }) => [{ opacity: pressed && !isLoading ? 0.8 : 1 }]}
-        className="mb-6"
+    <ScreenContainer style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        <View className="flex-row items-center justify-center gap-2 px-6 py-4 rounded-lg bg-primary">
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>ログイン</Text>
+          <Text style={styles.subtitle}>メールアドレスとパスワードでログイン</Text>
+        </View>
+
+        {/* Error Message */}
+        {error && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+
+        {/* Email Input */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>メールアドレス</Text>
+          <TextInput
+            placeholder="example@example.com"
+            placeholderTextColor={colors.muted}
+            value={email}
+            onChangeText={setEmail}
+            editable={!isLoading}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={styles.input}
+          />
+        </View>
+
+        {/* Password Input */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>パスワード</Text>
+          <TextInput
+            placeholder="••••••••"
+            placeholderTextColor={colors.muted}
+            value={password}
+            onChangeText={setPassword}
+            editable={!isLoading}
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={styles.input}
+          />
+        </View>
+
+        {/* Forgot Password Link */}
+        <Pressable
+          onPress={() => router.navigate({ pathname: "/(auth)/forgot-password" })}
+          disabled={isLoading}
+          style={styles.forgotPassword}
+        >
+          <Text style={styles.forgotPasswordText}>パスワードを忘れた場合</Text>
+        </Pressable>
+
+        {/* Login Button */}
+        <Pressable
+          onPress={handleLogin}
+          disabled={isLoading}
+          style={({ pressed }) => [
+            styles.loginButton,
+            pressed && !isLoading && { opacity: 0.8 },
+          ]}
+        >
           {isLoading && <ActivityIndicator color={colors.background} size="small" />}
-          <Text className="text-base font-semibold text-background">
+          <Text style={styles.loginButtonText}>
             {isLoading ? "ログイン中..." : "ログイン"}
           </Text>
-        </View>
-      </Pressable>
-
-      {/* Signup Link */}
-      <View className="border-t border-border pt-6">
-        <Text className="text-sm text-muted text-center mb-3">アカウントをお持ちではありませんか？</Text>
-        <Pressable
-          onPress={handleSignup}
-          disabled={isLoading}
-          style={({ pressed }) => [{ opacity: pressed && !isLoading ? 0.8 : 1 }]}
-        >
-          <View className="px-6 py-3 rounded-lg border border-primary">
-            <Text className="text-base font-semibold text-primary text-center">新規登録</Text>
-          </View>
         </Pressable>
-      </View>
+
+        {/* Signup Section */}
+        <View style={styles.signupSection}>
+          <Text style={styles.signupLabel}>アカウントをお持ちではありませんか？</Text>
+          <Pressable
+            onPress={handleSignup}
+            disabled={isLoading}
+            style={({ pressed }) => [
+              styles.signupButton,
+              pressed && !isLoading && { opacity: 0.8 },
+            ]}
+          >
+            <Text style={styles.signupButtonText}>新規登録</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
     </ScreenContainer>
   );
 }
