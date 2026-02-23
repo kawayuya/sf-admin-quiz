@@ -40,7 +40,6 @@ function RootLayoutContent() {
   const [insets, setInsets] = useState<EdgeInsets>(initialInsets);
   const [frame, setFrame] = useState<Rect>(initialFrame);
   const { isAuthenticated, loading } = useAuth();
-  const colors = useColors();
 
   // Initialize Manus runtime for cookie injection from parent container
   useEffect(() => {
@@ -92,7 +91,7 @@ function RootLayoutContent() {
     return (
       <GestureHandlerRootView style={{ flex: 1 }}>
         <View className="flex-1 items-center justify-center bg-background">
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color="#0a7ea4" />
         </View>
       </GestureHandlerRootView>
     );
