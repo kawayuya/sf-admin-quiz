@@ -1,4 +1,3 @@
-import { ScreenContainer } from "@/components/screen-container";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -10,6 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/use-colors";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -65,7 +65,7 @@ export default function LoginScreen() {
   };
 
   const styles = StyleSheet.create({
-    container: {
+    safeArea: {
       flex: 1,
       backgroundColor: colors.background,
     },
@@ -171,7 +171,7 @@ export default function LoginScreen() {
   });
 
   return (
-    <ScreenContainer style={styles.container}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -260,6 +260,6 @@ export default function LoginScreen() {
           </Pressable>
         </View>
       </ScrollView>
-    </ScreenContainer>
+    </SafeAreaView>
   );
 }
