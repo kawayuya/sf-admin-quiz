@@ -1,7 +1,15 @@
-import { ScreenContainer } from "@/components/screen-container";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/use-colors";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -44,145 +52,245 @@ export default function EmailLoginScreen() {
     }
   };
 
+  const styles = StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      justifyContent: "center",
+      paddingHorizontal: 24,
+      paddingVertical: 48,
+    },
+    header: {
+      marginBottom: 32,
+      alignItems: "center",
+    },
+    backButton: {
+      marginBottom: 16,
+      padding: 8,
+    },
+    backText: {
+      fontSize: 24,
+    },
+    title: {
+      fontSize: 32,
+      fontWeight: "700",
+      color: colors.foreground,
+      marginBottom: 8,
+      textAlign: "center",
+    },
+    subtitle: {
+      fontSize: 14,
+      color: colors.muted,
+      textAlign: "center",
+    },
+    errorContainer: {
+      backgroundColor: colors.error + "20",
+      borderWidth: 1,
+      borderColor: colors.error,
+      borderRadius: 8,
+      padding: 16,
+      marginBottom: 24,
+      width: "100%",
+    },
+    errorText: {
+      color: colors.error,
+      fontSize: 14,
+      textAlign: "center",
+    },
+    inputGroup: {
+      marginBottom: 16,
+      width: "100%",
+    },
+    inputLabelRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    label: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: colors.foreground,
+    },
+    forgotLink: {
+      fontSize: 12,
+      color: colors.primary,
+    },
+    input: {
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderRadius: 8,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      color: colors.foreground,
+      fontSize: 16,
+    },
+    helperText: {
+      fontSize: 12,
+      color: colors.muted,
+      marginTop: 8,
+    },
+    button: {
+      paddingHorizontal: 24,
+      paddingVertical: 16,
+      borderRadius: 8,
+      marginBottom: 24,
+      width: "100%",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+    },
+    buttonText: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: colors.background,
+    },
+    toggleSection: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 4,
+      marginBottom: 24,
+    },
+    toggleText: {
+      fontSize: 14,
+      color: colors.muted,
+    },
+    toggleLink: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: colors.primary,
+    },
+    footer: {
+      alignItems: "center",
+      marginTop: 16,
+      paddingHorizontal: 24,
+    },
+    footerText: {
+      fontSize: 12,
+      color: colors.muted,
+      textAlign: "center",
+    },
+  });
+
   return (
-    <ScreenContainer className="flex-1 bg-background">
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
-        className="flex-1"
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View className="flex-1 justify-center items-center px-6 py-8 gap-6">
-          {/* Header */}
-          <View className="items-center gap-2 mb-4">
-            <Pressable
-              onPress={() => router.back()}
-              style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
-            >
-              <Text className="text-2xl">←</Text>
-            </Pressable>
-            <Text className="text-3xl font-bold text-foreground">
-              {isSignUp ? "アカウント作成" : "ログイン"}
-            </Text>
-            <Text className="text-sm text-muted">
-              {isSignUp ? "新しいアカウントを作成" : "メールアドレスでログイン"}
-            </Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <Pressable
+            onPress={() => router.back()}
+            style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.7 }]}
+          >
+            <Text style={styles.backText}>←</Text>
+          </Pressable>
+          <Text style={styles.title}>{isSignUp ? "アカウント作成" : "ログイン"}</Text>
+          <Text style={styles.subtitle}>
+            {isSignUp ? "新しいアカウントを作成" : "メールアドレスでログイン"}
+          </Text>
+        </View>
+
+        {/* Error Message */}
+        {error && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
           </View>
+        )}
 
-          {/* Error Message */}
-          {error && (
-            <View className="bg-error/10 border border-error rounded-lg p-4 w-full">
-              <Text className="text-error text-center text-sm">{error}</Text>
-            </View>
-          )}
+        {/* Email Input */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>メールアドレス</Text>
+          <TextInput
+            placeholder="example@email.com"
+            placeholderTextColor={colors.muted}
+            value={email}
+            onChangeText={setEmail}
+            editable={!isLoading}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={styles.input}
+          />
+        </View>
 
-          {/* Email Input */}
-          <View className="w-full gap-2">
-            <Text className="text-sm font-semibold text-foreground">メールアドレス</Text>
-            <TextInput
-              placeholder="example@email.com"
-              placeholderTextColor={colors.muted}
-              value={email}
-              onChangeText={setEmail}
-              editable={!isLoading}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              className="px-4 py-3 rounded-lg bg-surface border border-border text-foreground"
-              style={{
-                color: colors.foreground,
-              }}
-            />
-          </View>
-
-          {/* Password Input */}
-          <View className="w-full gap-2">
-            <View className="flex-row justify-between items-center">
-              <Text className="text-sm font-semibold text-foreground">パスワード</Text>
-              {!isSignUp && (
-                <Pressable
-                  onPress={() => router.navigate({ pathname: "/(auth)/forgot-password" })}
-                  disabled={isLoading}
-                >
-                  <Text className="text-xs text-primary">忘れた場合</Text>
-                </Pressable>
-              )}
-            </View>
-            <TextInput
-              placeholder="••••••••"
-              placeholderTextColor={colors.muted}
-              value={password}
-              onChangeText={setPassword}
-              editable={!isLoading}
-              secureTextEntry
-              className="px-4 py-3 rounded-lg bg-surface border border-border text-foreground"
-              style={{
-                color: colors.foreground,
-              }}
-            />
-            {isSignUp && (
-              <Text className="text-xs text-muted">
-                8文字以上のパスワードを設定してください
-              </Text>
+        {/* Password Input */}
+        <View style={styles.inputGroup}>
+          <View style={styles.inputLabelRow}>
+            <Text style={styles.label}>パスワード</Text>
+            {!isSignUp && (
+              <Pressable
+                onPress={() => router.navigate({ pathname: "/(auth)/forgot-password" })}
+                disabled={isLoading}
+              >
+                <Text style={styles.forgotLink}>忘れた場合</Text>
+              </Pressable>
             )}
           </View>
+          <TextInput
+            placeholder="••••••••"
+            placeholderTextColor={colors.muted}
+            value={password}
+            onChangeText={setPassword}
+            editable={!isLoading}
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={styles.input}
+          />
+          {isSignUp && <Text style={styles.helperText}>8文字以上のパスワードを設定してください</Text>}
+        </View>
 
-          {/* Login Button */}
-          <Pressable
-            onPress={handleLogin}
-            disabled={isLoading}
-            style={({ pressed }) => [
-              {
-                opacity: pressed && !isLoading ? 0.8 : 1,
-              },
-            ]}
-            className="w-full"
-          >
-            <View
-              className={`flex-row items-center justify-center gap-2 px-6 py-4 rounded-full ${
-                isLoading ? "bg-primary/50" : "bg-primary"
-              }`}
-            >
-              {isLoading ? (
-                <>
-                  <ActivityIndicator color={colors.background} size="small" />
-                  <Text className="text-base font-semibold text-background">
-                    処理中...
-                  </Text>
-                </>
-              ) : (
-                <Text className="text-base font-semibold text-background">
-                  {isSignUp ? "アカウント作成" : "ログイン"}
-                </Text>
-              )}
-            </View>
-          </Pressable>
+        {/* Login Button */}
+        <Pressable
+          onPress={handleLogin}
+          disabled={isLoading}
+          style={({ pressed }) => [
+            styles.button,
+            { backgroundColor: isLoading ? colors.primary + "80" : colors.primary },
+            pressed && !isLoading && { opacity: 0.8 },
+          ]}
+        >
+          {isLoading && <ActivityIndicator color={colors.background} size="small" />}
+          <Text style={styles.buttonText}>
+            {isLoading ? "処理中..." : isSignUp ? "アカウント作成" : "ログイン"}
+          </Text>
+        </Pressable>
 
-          {/* Toggle Sign Up / Login */}
-          <Pressable
-            onPress={() => {
-              setIsSignUp(!isSignUp);
-              setError(null);
-              setPassword("");
-            }}
-            disabled={isLoading}
-          >
-            <View className="flex-row items-center justify-center gap-1">
-              <Text className="text-sm text-muted">
-                {isSignUp ? "既にアカウントをお持ちですか？" : "アカウントをお持ちでないですか？"}
-              </Text>
-              <Text className="text-sm font-semibold text-primary">
-                {isSignUp ? "ログイン" : "アカウント作成"}
-              </Text>
-            </View>
-          </Pressable>
-
-          {/* Footer */}
-          <View className="items-center gap-2 px-6 mt-4">
-            <Text className="text-xs text-muted text-center">
-              {isSignUp ? "アカウント作成することでプライバシーポリシーに同意します" : "安全なログインをお楽しみください"}
+        {/* Toggle Sign Up / Login */}
+        <Pressable
+          onPress={() => {
+            setIsSignUp(!isSignUp);
+            setError(null);
+            setPassword("");
+          }}
+          disabled={isLoading}
+          style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+        >
+          <View style={styles.toggleSection}>
+            <Text style={styles.toggleText}>
+              {isSignUp ? "既にアカウントをお持ちですか？" : "アカウントをお持ちでないですか？"}
             </Text>
+            <Text style={styles.toggleLink}>{isSignUp ? "ログイン" : "アカウント作成"}</Text>
           </View>
+        </Pressable>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            {isSignUp
+              ? "アカウント作成することでプライバシーポリシーに同意します"
+              : "安全なログインをお楽しみください"}
+          </Text>
         </View>
       </ScrollView>
-    </ScreenContainer>
+    </SafeAreaView>
   );
 }
