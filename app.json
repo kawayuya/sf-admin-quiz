@@ -1,5 +1,9 @@
 {
   "expo": {
+    "web": {
+      "staticRoutes": true,
+      "favicon": "./assets/images/favicon.png"
+    },
     "plugins": [
       [
         "expo-router",
