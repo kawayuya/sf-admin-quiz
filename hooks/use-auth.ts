@@ -19,70 +19,46 @@ export function useAuth(options?: UseAuthOptions) {
       setLoading(true);
       setError(null);
 
-      // Web platform: use cookie-based auth, fetch user from API
-      if (Platform.OS === "web") {
-        console.log("[useAuth] Web platform: fetching user from API...");
-        try {
-          const apiUser = await Api.getMe();
-          console.log("[useAuth] API user response:", apiUser);
+      // Both Web and Native: call /api/auth/me to verify session
+      // Web: uses session cookie (set by backend after OAuth callback)
+      // Native: uses Bearer token from SecureStore
+      console.log("[useAuth] Fetching user from /api/auth/me...");
+      const apiUser = await Api.getMe();
+      console.log("[useAuth] API user response:", apiUser);
 
-          if (apiUser) {
-            const userInfo: Auth.User = {
-              id: apiUser.id,
-              openId: apiUser.openId,
-              name: apiUser.name,
-              email: apiUser.email,
-              loginMethod: apiUser.loginMethod,
-              lastSignedIn: new Date(apiUser.lastSignedIn),
-            };
-            setUser(userInfo);
-            // Cache user info in localStorage for faster subsequent loads
-            await Auth.setUserInfo(userInfo);
-            console.log("[useAuth] Web user set from API:", userInfo);
-          } else {
-            console.log("[useAuth] Web: No authenticated user from API");
-            setUser(null);
-            await Auth.clearUserInfo();
-          }
-        } catch (err) {
-          console.error("[useAuth] Web: Error fetching user from API:", err);
-          setUser(null);
-          await Auth.clearUserInfo();
-        }
-        return;
-      }
-
-      // Native platform: use token-based auth
-      console.log("[useAuth] Native platform: checking for session token...");
-      const sessionToken = await Auth.getSessionToken();
-      console.log(
-        "[useAuth] Session token:",
-        sessionToken ? `present (${sessionToken.substring(0, 20)}...)` : "missing",
-      );
-      if (!sessionToken) {
-        console.log("[useAuth] No session token, setting user to null");
-        setUser(null);
-        return;
-      }
-
-      // Use cached user info for native (token validates the session)
-      const cachedUser = await Auth.getUserInfo();
-      console.log("[useAuth] Cached user:", cachedUser);
-      if (cachedUser) {
-        console.log("[useAuth] Using cached user info");
-        setUser(cachedUser);
+      if (apiUser) {
+        const userInfo: Auth.User = {
+          id: apiUser.id,
+          openId: apiUser.openId,
+          name: apiUser.name,
+          email: apiUser.email,
+          loginMethod: apiUser.loginMethod,
+          lastSignedIn: new Date(apiUser.lastSignedIn),
+        };
+        setUser(userInfo);
+        console.log("[useAuth] User authenticated:", userInfo);
       } else {
-        console.log("[useAuth] No cached user, setting user to null");
+        console.log("[useAuth] No authenticated user");
         setUser(null);
+        // Clear any stored session info when authentication fails
+        if (Platform.OS !== "web") {
+          await Auth.removeSessionToken();
+        }
+        await Auth.clearUserInfo();
       }
     } catch (err) {
       const error = err instanceof Error ? err : new Error("Failed to fetch user");
       console.error("[useAuth] fetchUser error:", error);
       setError(error);
       setUser(null);
+      // Clear any stored session info when authentication fails
+      if (Platform.OS !== "web") {
+        await Auth.removeSessionToken().catch(() => {});
+      }
+      await Auth.clearUserInfo().catch(() => {});
     } finally {
       setLoading(false);
-      console.log("[useAuth] fetchUser completed, loading:", false);
+      console.log("[useAuth] fetchUser completed, loading: false");
     }
   }, []);
 
@@ -93,8 +69,8 @@ export function useAuth(options?: UseAuthOptions) {
       console.error("[Auth] Logout API call failed:", err);
       // Continue with logout even if API call fails
     } finally {
-      await Auth.removeSessionToken();
-      await Auth.clearUserInfo();
+      await Auth.removeSessionToken().catch(() => {});
+      await Auth.clearUserInfo().catch(() => {});
       setUser(null);
       setError(null);
     }
@@ -103,26 +79,11 @@ export function useAuth(options?: UseAuthOptions) {
   const isAuthenticated = useMemo(() => Boolean(user), [user]);
 
   useEffect(() => {
-    console.log("[useAuth] useEffect triggered, autoFetch:", autoFetch, "platform:", Platform.OS);
+    console.log("[useAuth] useEffect triggered, autoFetch:", autoFetch);
     if (autoFetch) {
-      if (Platform.OS === "web") {
-        // Web: fetch user from API directly (user will login manually if needed)
-        console.log("[useAuth] Web: fetching user from API...");
-        fetchUser();
-      } else {
-        // Native: check for cached user info first for faster initial load
-        Auth.getUserInfo().then((cachedUser) => {
-          console.log("[useAuth] Native cached user check:", cachedUser);
-          if (cachedUser) {
-            console.log("[useAuth] Native: setting cached user immediately");
-            setUser(cachedUser);
-            setLoading(false);
-          } else {
-            // No cached user, check session token
-            fetchUser();
-          }
-        });
-      }
+      // Always fetch from /api/auth/me on app startup
+      // This is the single source of truth for authentication state
+      fetchUser();
     } else {
       console.log("[useAuth] autoFetch disabled, setting loading to false");
       setLoading(false);

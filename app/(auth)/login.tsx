@@ -49,64 +49,7 @@ export default function LoginScreen() {
         className="flex-1"
         showsVerticalScrollIndicator={false}
       >
-        <View className="flex-1 justify-center items-center px-6 py-8 gap-8">
-          {/* Header Section */}
-          <View className="items-center gap-4">
-            <View className="w-20 h-20 rounded-full bg-primary/20 items-center justify-center">
-              <Text className="text-5xl">🎓</Text>
-            </View>
-            <View className="items-center gap-2">
-              <Text className="text-3xl font-bold text-foreground">
-                Salesforce Admin
-              </Text>
-              <Text className="text-3xl font-bold text-foreground">
-                Quiz
-              </Text>
-              <Text className="text-base text-muted mt-2">
-                認定試験対策アプリ
-              </Text>
-            </View>
-          </View>
-
-          {/* Description Section */}
-          <View className="bg-surface rounded-2xl p-6 gap-4 w-full max-w-sm">
-            <View className="gap-3">
-              <View className="flex-row gap-3 items-start">
-                <Text className="text-2xl">📚</Text>
-                <View className="flex-1 gap-1">
-                  <Text className="text-base font-semibold text-foreground">
-                    250問の過去問
-                  </Text>
-                  <Text className="text-sm text-muted">
-                    最新の試験範囲に対応した問題集
-                  </Text>
-                </View>
-              </View>
-              <View className="flex-row gap-3 items-start">
-                <Text className="text-2xl">⚡</Text>
-                <View className="flex-1 gap-1">
-                  <Text className="text-base font-semibold text-foreground">
-                    即座にフィードバック
-                  </Text>
-                  <Text className="text-sm text-muted">
-                    各問題の詳細な解説付き
-                  </Text>
-                </View>
-              </View>
-              <View className="flex-row gap-3 items-start">
-                <Text className="text-2xl">📊</Text>
-                <View className="flex-1 gap-1">
-                  <Text className="text-base font-semibold text-foreground">
-                    成績分析
-                  </Text>
-                  <Text className="text-sm text-muted">
-                    弱点を自動抽出して対策
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </View>
-
+        <View className="flex-1 justify-center items-center px-6 py-8 gap-6">
           {/* Error Message */}
           {error && (
             <View className="bg-error/10 border border-error rounded-lg p-4 w-full max-w-sm">
@@ -133,7 +76,7 @@ export default function LoginScreen() {
               <View className="flex-row items-center justify-center gap-3 px-6 py-4 rounded-full bg-surface border-2 border-border">
                 <Text className="text-xl">🔵</Text>
                 <Text className="text-base font-semibold text-foreground">
-                  {isLoading && selectedMethod === "google" ? "ログイン中..." : "Google でログイン"}
+                  {isLoading && selectedMethod === "google" ? "ログイン中..." : "Google アカウントで続ける"}
                 </Text>
                 {isLoading && selectedMethod === "google" && (
                   <ActivityIndicator color={colors.primary} size="small" />
@@ -154,7 +97,7 @@ export default function LoginScreen() {
               <View className="flex-row items-center justify-center gap-3 px-6 py-4 rounded-full bg-surface border-2 border-border">
                 <Text className="text-xl">⬜</Text>
                 <Text className="text-base font-semibold text-foreground">
-                  {isLoading && selectedMethod === "microsoft" ? "ログイン中..." : "Microsoft でログイン"}
+                  {isLoading && selectedMethod === "microsoft" ? "ログイン中..." : "Microsoft アカウントで続ける"}
                 </Text>
                 {isLoading && selectedMethod === "microsoft" && (
                   <ActivityIndicator color={colors.primary} size="small" />
@@ -175,7 +118,7 @@ export default function LoginScreen() {
               <View className="flex-row items-center justify-center gap-3 px-6 py-4 rounded-full bg-surface border-2 border-border">
                 <Text className="text-xl">✉️</Text>
                 <Text className="text-base font-semibold text-foreground">
-                  {isLoading && selectedMethod === "email" ? "ログイン中..." : "メールアドレスでログイン"}
+                  {isLoading && selectedMethod === "email" ? "ログイン中..." : "メールアドレスで続ける"}
                 </Text>
                 {isLoading && selectedMethod === "email" && (
                   <ActivityIndicator color={colors.primary} size="small" />

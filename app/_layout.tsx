@@ -1,6 +1,6 @@
 import "@/global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -21,7 +21,6 @@ import { trpc, createTRPCClient } from "@/lib/trpc";
 import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/_core/manus-runtime";
 import { setupErrorHandler } from "@/lib/error-handler";
 import { useAuth } from "@/hooks/use-auth";
-import { useColors } from "@/hooks/use-colors";
 
 // エラーハンドラーを初期化
 setupErrorHandler();
@@ -29,11 +28,8 @@ setupErrorHandler();
 const DEFAULT_WEB_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
 
-export const unstable_settings = {
-  anchor: "(tabs)",
-};
-
 function RootLayoutContent() {
+  const router = useRouter();
   const initialInsets = initialWindowMetrics?.insets ?? DEFAULT_WEB_INSETS;
   const initialFrame = initialWindowMetrics?.frame ?? DEFAULT_WEB_FRAME;
 
@@ -45,6 +41,24 @@ function RootLayoutContent() {
   useEffect(() => {
     initManusRuntime();
   }, []);
+
+  // Force redirect when auth state changes
+  useEffect(() => {
+    if (loading) return; // Wait for auth check to complete
+
+    console.log("[RootLayout] Auth state changed:", { isAuthenticated, loading });
+
+    // When user becomes unauthenticated, force redirect to login
+    if (!isAuthenticated) {
+      console.log("[RootLayout] Redirecting to login...");
+      router.replace("/(auth)/login");
+    }
+    // When user becomes authenticated, force redirect to home
+    else {
+      console.log("[RootLayout] Redirecting to home...");
+      router.replace("/(tabs)");
+    }
+  }, [isAuthenticated, loading, router]);
 
   const handleSafeAreaUpdate = useCallback((metrics: Metrics) => {
     setInsets(metrics.insets);
@@ -63,9 +77,7 @@ function RootLayoutContent() {
       new QueryClient({
         defaultOptions: {
           queries: {
-            // Disable automatic refetching on window focus for mobile
             refetchOnWindowFocus: false,
-            // Retry failed requests once
             retry: 1,
           },
         },
@@ -97,14 +109,13 @@ function RootLayoutContent() {
     );
   }
 
+  const shouldOverrideSafeArea = Platform.OS === "web";
+
   const content = (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QuizProvider>
         <trpc.Provider client={trpcClient} queryClient={queryClient}>
           <QueryClientProvider client={queryClient}>
-            {/* Default to hiding native headers so raw route segments don't appear (e.g. "(tabs)", "products/[id]"). */}
-            {/* If a screen needs the native header, explicitly enable it and set a human title via Stack.Screen options. */}
-            {/* in order for ios apps tab switching to work properly, use presentation: "fullScreenModal" for login page, whenever you decide to use presentation: "modal*/}
             <Stack screenOptions={{ headerShown: false }}>
               {isAuthenticated ? (
                 <>
@@ -124,8 +135,6 @@ function RootLayoutContent() {
       </QuizProvider>
     </GestureHandlerRootView>
   );
-
-  const shouldOverrideSafeArea = Platform.OS === "web";
 
   if (shouldOverrideSafeArea) {
     return (
