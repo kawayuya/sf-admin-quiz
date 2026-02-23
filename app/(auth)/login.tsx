@@ -1,21 +1,35 @@
 import { ScreenContainer } from "@/components/screen-container";
 import { startOAuthLogin } from "@/constants/oauth";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { useColors } from "@/hooks/use-colors";
+
+type LoginMethod = "google" | "microsoft" | "email" | null;
 
 export default function LoginScreen() {
   const router = useRouter();
   const colors = useColors();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState<LoginMethod>(null);
 
-  const handleLogin = async () => {
+  const handleLogin = async (method: LoginMethod) => {
     try {
       setIsLoading(true);
       setError(null);
-      console.log("[LoginScreen] Starting OAuth login...");
+      setSelectedMethod(method);
+      console.log("[LoginScreen] Starting login with method:", method);
+
+      if (method === "email") {
+        // メールアドレスでのログインは別画面に遷移
+        router.navigate({
+          pathname: "/(auth)/email-login",
+        });
+        return;
+      }
+
+      // Google / Microsoft の場合は OAuth ログイン
       await startOAuthLogin();
       // On native, the app will be reopened via deep link after OAuth callback
       // On web, the page will redirect to the OAuth portal
@@ -24,11 +38,12 @@ export default function LoginScreen() {
       console.error("[LoginScreen] Login error:", err);
       setError(errorMessage);
       setIsLoading(false);
+      setSelectedMethod(null);
     }
   };
 
   return (
-    <ScreenContainer className="flex-1 bg-gradient-to-b from-primary/10 to-background">
+    <ScreenContainer className="flex-1 bg-background">
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         className="flex-1"
@@ -99,44 +114,80 @@ export default function LoginScreen() {
             </View>
           )}
 
-          {/* Login Button */}
-          <Pressable
-            onPress={handleLogin}
-            disabled={isLoading}
-            style={({ pressed }) => [
-              {
-                opacity: pressed && !isLoading ? 0.8 : 1,
-              },
-            ]}
-            className="w-full max-w-sm"
-          >
-            <View
-              className={`flex-row items-center justify-center gap-2 px-6 py-4 rounded-full ${
-                isLoading ? "bg-primary/50" : "bg-primary"
-              }`}
+          {/* Login Methods */}
+          <View className="w-full max-w-sm gap-3">
+            <Text className="text-sm font-semibold text-muted text-center mb-2">
+              以下の方法でログイン
+            </Text>
+
+            {/* Google Login Button */}
+            <Pressable
+              onPress={() => handleLogin("google")}
+              disabled={isLoading}
+              style={({ pressed }) => [
+                {
+                  opacity: pressed && !isLoading ? 0.8 : 1,
+                },
+              ]}
             >
-              {isLoading ? (
-                <>
-                  <ActivityIndicator color={colors.background} size="small" />
-                  <Text className="text-lg font-semibold text-background">
-                    ログイン中...
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <Text className="text-lg font-semibold text-background">
-                    Salesforce でログイン
-                  </Text>
-                  <Text className="text-lg">→</Text>
-                </>
-              )}
-            </View>
-          </Pressable>
+              <View className="flex-row items-center justify-center gap-3 px-6 py-4 rounded-full bg-surface border-2 border-border">
+                <Text className="text-xl">🔵</Text>
+                <Text className="text-base font-semibold text-foreground">
+                  {isLoading && selectedMethod === "google" ? "ログイン中..." : "Google でログイン"}
+                </Text>
+                {isLoading && selectedMethod === "google" && (
+                  <ActivityIndicator color={colors.primary} size="small" />
+                )}
+              </View>
+            </Pressable>
+
+            {/* Microsoft Login Button */}
+            <Pressable
+              onPress={() => handleLogin("microsoft")}
+              disabled={isLoading}
+              style={({ pressed }) => [
+                {
+                  opacity: pressed && !isLoading ? 0.8 : 1,
+                },
+              ]}
+            >
+              <View className="flex-row items-center justify-center gap-3 px-6 py-4 rounded-full bg-surface border-2 border-border">
+                <Text className="text-xl">⬜</Text>
+                <Text className="text-base font-semibold text-foreground">
+                  {isLoading && selectedMethod === "microsoft" ? "ログイン中..." : "Microsoft でログイン"}
+                </Text>
+                {isLoading && selectedMethod === "microsoft" && (
+                  <ActivityIndicator color={colors.primary} size="small" />
+                )}
+              </View>
+            </Pressable>
+
+            {/* Email Login Button */}
+            <Pressable
+              onPress={() => handleLogin("email")}
+              disabled={isLoading}
+              style={({ pressed }) => [
+                {
+                  opacity: pressed && !isLoading ? 0.8 : 1,
+                },
+              ]}
+            >
+              <View className="flex-row items-center justify-center gap-3 px-6 py-4 rounded-full bg-surface border-2 border-border">
+                <Text className="text-xl">✉️</Text>
+                <Text className="text-base font-semibold text-foreground">
+                  {isLoading && selectedMethod === "email" ? "ログイン中..." : "メールアドレスでログイン"}
+                </Text>
+                {isLoading && selectedMethod === "email" && (
+                  <ActivityIndicator color={colors.primary} size="small" />
+                )}
+              </View>
+            </Pressable>
+          </View>
 
           {/* Footer Text */}
           <View className="items-center gap-2 px-6">
             <Text className="text-xs text-muted text-center">
-              Salesforce アカウントでセキュアにログインします
+              セキュアなログイン方法を選択してください
             </Text>
             <Text className="text-xs text-muted text-center">
               初回ログイン時にアカウントが自動作成されます
