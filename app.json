@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": false,
+          "asyncRoutes": false
+        }
+      ]
+    ]
+  }
+}
