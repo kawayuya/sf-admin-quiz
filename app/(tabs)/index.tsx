@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import questions from '@/lib/questions.json';
 import type { Question } from '@/lib/types';
+import { useAuth } from '@/hooks/use-auth';
 
 const CATEGORIES = [
   'セキュリティとアクセス',
@@ -24,7 +25,14 @@ export default function HomeScreen() {
   const router = useRouter();
   const colors = useColors();
   const { sessions, loadSessions, getCategoryStats, initializeWeakPointQuiz, selectedCertification, initializeCategoryQuiz } = useQuiz();
+  const { user, logout } = useAuth();
   const [incorrectCount, setIncorrectCount] = useState(0);
+
+  const handleLogout = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await logout();
+    router.replace('/(auth)/login');
+  };
 
   useEffect(() => {
     loadSessions();
@@ -85,13 +93,31 @@ export default function HomeScreen() {
     <ScreenContainer className="p-4">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
         {/* ヘッダー */}
-        <View className="items-center gap-2 mb-8 mt-4">
+        <View className="items-center gap-2 mb-4 mt-4">
+          <View className="w-full flex-row justify-between items-center mb-2">
+            <View className="flex-1" />
+            {user && (
+              <Pressable
+                onPress={handleLogout}
+                style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
+              >
+                <View className="bg-error/10 rounded-lg px-3 py-2">
+                  <Text className="text-xs font-semibold text-error">ログアウト</Text>
+                </View>
+              </Pressable>
+            )}
+          </View>
           <Text className="text-4xl font-bold text-primary">
             SF Admin Quiz
           </Text>
           <Text className="text-base text-muted">
             Salesforce認定アドミニストレーター試験対策
           </Text>
+          {user && (
+            <Text className="text-xs text-muted mt-2">
+              ログイン: {user.name || user.email}
+            </Text>
+          )}
         </View>
 
         {/* メインCTA - 通常モード */}
@@ -104,7 +130,7 @@ export default function HomeScreen() {
             },
           ]}
         >
-          <View className="bg-primary rounded-2xl p-8 items-center justify-center mb-4">
+          <View className="bg-primary rounded-2xl p-8 items-center justify-center mb-6">
             <Text className="text-5xl mb-3">📚</Text>
             <Text className="text-2xl font-bold text-background mb-2">
               クイズを始める
