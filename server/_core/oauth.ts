@@ -272,9 +272,12 @@ export function registerOAuthRoutes(app: Express) {
 
       // Hash password
       const passwordHash = await hashPassword(password);
+      console.log("[Auth] Password hashed successfully");
 
       // Create new user with unique openId
       const openId = `email_${crypto.randomBytes(16).toString("hex")}`;
+      console.log("[Auth] Creating user with openId:", openId);
+      
       await db.upsertUser({
         openId,
         email,
@@ -283,12 +286,14 @@ export function registerOAuthRoutes(app: Express) {
         name: null,
         lastSignedIn: new Date(),
       });
+      console.log("[Auth] User created successfully");
 
       // Create session token
       const sessionToken = await sdk.createSessionToken(openId, {
         name: "",
         expiresInMs: ONE_YEAR_MS,
       });
+      console.log("[Auth] Session token created");
 
       // Set cookie
       const cookieOptions = getSessionCookieOptions(req);
@@ -301,7 +306,8 @@ export function registerOAuthRoutes(app: Express) {
       });
     } catch (error) {
       console.error("[Auth] Email signup failed:", error);
-      res.status(500).json({ error: "Email signup failed" });
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ error: `Email signup failed: ${errorMessage}` });
     }
   });
 
