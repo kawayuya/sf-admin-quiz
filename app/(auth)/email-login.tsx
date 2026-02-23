@@ -3,6 +3,8 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useColors } from "@/hooks/use-colors";
+import { emailLogin } from "@/lib/_core/api";
+import * as Auth from "@/lib/_core/auth";
 
 export default function EmailLoginScreen() {
   const router = useRouter();
@@ -20,21 +22,23 @@ export default function EmailLoginScreen() {
         return;
       }
 
+      if (isSignUp && password.length < 8) {
+        setError("パスワードは8文字以上である必要があります");
+        return;
+      }
+
       setIsLoading(true);
       setError(null);
       console.log("[EmailLogin] Attempting login with email:", email);
 
-      // TODO: API 呼び出しでログイン処理を実装
-      // const response = await apiCall("/api/auth/email-login", {
-      //   method: "POST",
-      //   body: JSON.stringify({ email, password, isSignUp }),
-      // });
+      const result = await emailLogin(email, password, isSignUp);
+      console.log("[EmailLogin] Login successful");
 
-      // ここでは仮の処理
-      setTimeout(() => {
-        setIsLoading(false);
-        router.replace("/(tabs)");
-      }, 1000);
+      // Save session token
+      await Auth.setSessionToken(result.sessionToken);
+
+      // Navigate to home
+      router.replace("/(tabs)");
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "ログインに失敗しました";
       console.error("[EmailLogin] Error:", err);
@@ -94,7 +98,17 @@ export default function EmailLoginScreen() {
 
           {/* Password Input */}
           <View className="w-full gap-2">
-            <Text className="text-sm font-semibold text-foreground">パスワード</Text>
+            <View className="flex-row justify-between items-center">
+              <Text className="text-sm font-semibold text-foreground">パスワード</Text>
+              {!isSignUp && (
+                <Pressable
+                  onPress={() => router.navigate({ pathname: "/(auth)/forgot-password" })}
+                  disabled={isLoading}
+                >
+                  <Text className="text-xs text-primary">忘れた場合</Text>
+                </Pressable>
+              )}
+            </View>
             <TextInput
               placeholder="••••••••"
               placeholderTextColor={colors.muted}
@@ -107,6 +121,11 @@ export default function EmailLoginScreen() {
                 color: colors.foreground,
               }}
             />
+            {isSignUp && (
+              <Text className="text-xs text-muted">
+                8文字以上のパスワードを設定してください
+              </Text>
+            )}
           </View>
 
           {/* Login Button */}
@@ -145,6 +164,7 @@ export default function EmailLoginScreen() {
             onPress={() => {
               setIsSignUp(!isSignUp);
               setError(null);
+              setPassword("");
             }}
             disabled={isLoading}
           >
@@ -161,7 +181,7 @@ export default function EmailLoginScreen() {
           {/* Footer */}
           <View className="items-center gap-2 px-6 mt-4">
             <Text className="text-xs text-muted text-center">
-              プライバシーポリシーに同意してください
+              {isSignUp ? "アカウント作成することでプライバシーポリシーに同意します" : "安全なログインをお楽しみください"}
             </Text>
           </View>
         </View>

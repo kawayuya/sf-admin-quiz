@@ -170,3 +170,129 @@ export async function establishSession(token: string): Promise<boolean> {
     return false;
   }
 }
+
+
+// Email login - sign up or login
+export async function emailLogin(
+  email: string,
+  password: string,
+  isSignUp: boolean,
+): Promise<{ sessionToken: string; user: any }> {
+  try {
+    console.log("[API] emailLogin called:", { email, isSignUp });
+    const endpoint = isSignUp ? "/api/auth/signup" : "/api/auth/email-login";
+    const result = await apiCall<{ app_session_id: string; user: any }>(endpoint, {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+
+    const sessionToken = result.app_session_id;
+    console.log("[API] Email login result:", {
+      hasSessionToken: !!sessionToken,
+      hasUser: !!result.user,
+    });
+
+    return {
+      sessionToken,
+      user: result.user,
+    };
+  } catch (error) {
+    console.error("[API] emailLogin failed:", error);
+    throw error;
+  }
+}
+
+// Google OAuth login
+export async function googleLogin(idToken: string): Promise<{ sessionToken: string; user: any }> {
+  try {
+    console.log("[API] googleLogin called");
+    const result = await apiCall<{ app_session_id: string; user: any }>(
+      "/api/auth/google",
+      {
+        method: "POST",
+        body: JSON.stringify({ idToken }),
+      },
+    );
+
+    const sessionToken = result.app_session_id;
+    console.log("[API] Google login result:", {
+      hasSessionToken: !!sessionToken,
+      hasUser: !!result.user,
+    });
+
+    return {
+      sessionToken,
+      user: result.user,
+    };
+  } catch (error) {
+    console.error("[API] googleLogin failed:", error);
+    throw error;
+  }
+}
+
+// Microsoft OAuth login
+export async function microsoftLogin(
+  accessToken: string,
+): Promise<{ sessionToken: string; user: any }> {
+  try {
+    console.log("[API] microsoftLogin called");
+    const result = await apiCall<{ app_session_id: string; user: any }>(
+      "/api/auth/microsoft",
+      {
+        method: "POST",
+        body: JSON.stringify({ accessToken }),
+      },
+    );
+
+    const sessionToken = result.app_session_id;
+    console.log("[API] Microsoft login result:", {
+      hasSessionToken: !!sessionToken,
+      hasUser: !!result.user,
+    });
+
+    return {
+      sessionToken,
+      user: result.user,
+    };
+  } catch (error) {
+    console.error("[API] microsoftLogin failed:", error);
+    throw error;
+  }
+}
+
+// Request password reset
+export async function requestPasswordReset(email: string): Promise<{ success: boolean }> {
+  try {
+    console.log("[API] requestPasswordReset called:", { email });
+    const result = await apiCall<{ success: boolean }>("/api/auth/password-reset-request", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+
+    console.log("[API] Password reset request result:", result);
+    return result;
+  } catch (error) {
+    console.error("[API] requestPasswordReset failed:", error);
+    throw error;
+  }
+}
+
+// Reset password with token
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<{ success: boolean }> {
+  try {
+    console.log("[API] resetPassword called");
+    const result = await apiCall<{ success: boolean }>("/api/auth/password-reset", {
+      method: "POST",
+      body: JSON.stringify({ token, newPassword }),
+    });
+
+    console.log("[API] Password reset result:", result);
+    return result;
+  } catch (error) {
+    console.error("[API] resetPassword failed:", error);
+    throw error;
+  }
+}
