@@ -62,6 +62,36 @@ export function useAuth(options?: UseAuthOptions) {
     }
   }, []);
 
+  const login = useCallback(
+    async (email: string, password: string) => {
+      try {
+        setLoading(true);
+        setError(null);
+        console.log("[useAuth] Starting email login...");
+
+        // Call email login API (isSignUp = false for login)
+        const response = await Api.emailLogin(email, password, false);
+        console.log("[useAuth] Email login response:", response);
+
+        // Store session token on native platforms
+        if (Platform.OS !== "web" && response.sessionToken) {
+          await Auth.setSessionToken(response.sessionToken);
+        }
+
+        // Fetch user info to verify login
+        await fetchUser();
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error("Login failed");
+        console.error("[useAuth] Login error:", error);
+        setError(error);
+        throw error;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [fetchUser]
+  );
+
   const logout = useCallback(async () => {
     try {
       await Api.logout();
@@ -104,6 +134,7 @@ export function useAuth(options?: UseAuthOptions) {
     loading,
     error,
     isAuthenticated,
+    login,
     refresh: fetchUser,
     logout,
   };

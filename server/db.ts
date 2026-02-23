@@ -191,3 +191,114 @@ export async function getWrongQuestionIds(userId: number): Promise<number[]> {
     return [];
   }
 }
+
+
+// Email authentication functions
+import { passwordResetTokens } from "../drizzle/schema";
+import { ne } from "drizzle-orm";
+
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get user: database not available");
+    return undefined;
+  }
+
+  try {
+    const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    return result.length > 0 ? result[0] : undefined;
+  } catch (error) {
+    console.error("[Database] Failed to get user by email:", error);
+    return undefined;
+  }
+}
+
+export async function updateUserPassword(userId: number, passwordHash: string): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  try {
+    await db
+      .update(users)
+      .set({ passwordHash })
+      .where(eq(users.id, userId));
+  } catch (error) {
+    console.error("[Database] Failed to update user password:", error);
+    throw error;
+  }
+}
+
+export async function createPasswordResetToken(
+  userId: number,
+  token: string,
+  expiresAt: Date,
+): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  try {
+    await db.insert(passwordResetTokens).values({
+      userId,
+      token,
+      expiresAt,
+    });
+  } catch (error) {
+    console.error("[Database] Failed to create password reset token:", error);
+    throw error;
+  }
+}
+
+export async function getPasswordResetToken(token: string) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get password reset token: database not available");
+    return undefined;
+  }
+
+  try {
+    const result = await db
+      .select()
+      .from(passwordResetTokens)
+      .where(eq(passwordResetTokens.token, token))
+      .limit(1);
+    return result.length > 0 ? result[0] : undefined;
+  } catch (error) {
+    console.error("[Database] Failed to get password reset token:", error);
+    return undefined;
+  }
+}
+
+export async function deletePasswordResetToken(token: string): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  try {
+    await db
+      .delete(passwordResetTokens)
+      .where(eq(passwordResetTokens.token, token));
+  } catch (error) {
+    console.error("[Database] Failed to delete password reset token:", error);
+    throw error;
+  }
+}
+
+export async function deleteExpiredPasswordResetTokens(): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  try {
+    await db
+      .delete(passwordResetTokens)
+      .where(ne(passwordResetTokens.expiresAt, new Date()));
+  } catch (error) {
+    console.error("[Database] Failed to delete expired password reset tokens:", error);
+  }
+}

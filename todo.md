@@ -109,3 +109,11 @@
 - [x] パスワードリセット API 実装
 - [ ] メール送信機能実装（バックエンド）
 - [ ] Expo Go でテスト
+
+## OAuth バックエンド実装フェーズ
+
+- [ ] Google OAuth エンドポイント実装
+- [ ] Microsoft OAuth エンドポイント実装
+- [ ] expo-web-browser を使用した OAuth ログイン実装
+- [ ] OAuth コールバック処理実装
+- [ ] Expo Go でテスト

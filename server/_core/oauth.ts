@@ -1,8 +1,12 @@
 import { COOKIE_NAME, ONE_YEAR_MS } from "../../shared/const.js";
 import type { Express, Request, Response } from "express";
-import { getUserByOpenId, upsertUser } from "../db";
+import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
+import crypto from "crypto";
+import { promisify } from "util";
+
+const scryptAsync = promisify(crypto.scrypt);
 
 function getQueryParam(req: Request, key: string): string | undefined {
   const value = req.query[key];
@@ -21,14 +25,14 @@ async function syncUser(userInfo: {
   }
 
   const lastSignedIn = new Date();
-  await upsertUser({
+  await db.upsertUser({
     openId: userInfo.openId,
     name: userInfo.name || null,
     email: userInfo.email ?? null,
     loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
     lastSignedIn,
   });
-  const saved = await getUserByOpenId(userInfo.openId);
+  const saved = await db.getUserByOpenId(userInfo.openId);
   return (
     saved ?? {
       openId: userInfo.openId,
@@ -42,7 +46,7 @@ async function syncUser(userInfo: {
 
 function buildUserResponse(
   user:
-    | Awaited<ReturnType<typeof getUserByOpenId>>
+    | Awaited<ReturnType<typeof db.getUserByOpenId>>
     | {
         openId: string;
         name?: string | null;
@@ -59,6 +63,33 @@ function buildUserResponse(
     loginMethod: user?.loginMethod ?? null,
     lastSignedIn: (user?.lastSignedIn ?? new Date()).toISOString(),
   };
+}
+
+// Password hashing functions
+async function hashPassword(password: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    crypto.randomBytes(16, async (err, salt) => {
+      if (err) reject(err);
+      try {
+        const derivedKey = (await scryptAsync(password, salt, 64)) as Buffer;
+        const hashedPassword = salt.toString("hex") + ":" + derivedKey.toString("hex");
+        resolve(hashedPassword);
+      } catch (error) {
+        reject(error);
+      }
+    });
+  });
+}
+
+async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+  try {
+    const [salt, key] = hashedPassword.split(":");
+    const derivedKey = (await scryptAsync(password, Buffer.from(salt, "hex"), 64)) as Buffer;
+    return key === derivedKey.toString("hex");
+  } catch (error) {
+    console.error("[Auth] Password verification failed:", error);
+    return false;
+  }
 }
 
 export function registerOAuthRoutes(app: Express) {
@@ -169,6 +200,175 @@ export function registerOAuthRoutes(app: Express) {
     } catch (error) {
       console.error("[Auth] /api/auth/session failed:", error);
       res.status(401).json({ error: "Invalid token" });
+    }
+  });
+
+  // Email login endpoint
+  app.post("/api/auth/email-login", async (req: Request, res: Response) => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        res.status(400).json({ error: "Email and password are required" });
+        return;
+      }
+
+      // Find user by email
+      const user = await db.getUserByEmail(email);
+      if (!user || !user.passwordHash) {
+        res.status(401).json({ error: "Invalid email or password" });
+        return;
+      }
+
+      // Verify password
+      const isPasswordValid = await verifyPassword(password, user.passwordHash);
+      if (!isPasswordValid) {
+        res.status(401).json({ error: "Invalid email or password" });
+        return;
+      }
+
+      // Create session token
+      const sessionToken = await sdk.createSessionToken(user.openId, {
+        name: user.name || "",
+        expiresInMs: ONE_YEAR_MS,
+      });
+
+      // Set cookie
+      const cookieOptions = getSessionCookieOptions(req);
+      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+
+      // Update last signed in
+      await db.upsertUser({
+        openId: user.openId,
+        lastSignedIn: new Date(),
+      });
+
+      res.json({
+        app_session_id: sessionToken,
+        user: buildUserResponse(user),
+      });
+    } catch (error) {
+      console.error("[Auth] Email login failed:", error);
+      res.status(500).json({ error: "Email login failed" });
+    }
+  });
+
+  // Email signup endpoint
+  app.post("/api/auth/signup", async (req: Request, res: Response) => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        res.status(400).json({ error: "Email and password are required" });
+        return;
+      }
+
+      // Check if user already exists
+      const existingUser = await db.getUserByEmail(email);
+      if (existingUser) {
+        res.status(409).json({ error: "Email already registered" });
+        return;
+      }
+
+      // Hash password
+      const passwordHash = await hashPassword(password);
+
+      // Create new user with unique openId
+      const openId = `email_${crypto.randomBytes(16).toString("hex")}`;
+      await db.upsertUser({
+        openId,
+        email,
+        passwordHash,
+        loginMethod: "email",
+        name: null,
+        lastSignedIn: new Date(),
+      });
+
+      // Create session token
+      const sessionToken = await sdk.createSessionToken(openId, {
+        name: "",
+        expiresInMs: ONE_YEAR_MS,
+      });
+
+      // Set cookie
+      const cookieOptions = getSessionCookieOptions(req);
+      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+
+      const newUser = await db.getUserByOpenId(openId);
+      res.json({
+        app_session_id: sessionToken,
+        user: buildUserResponse(newUser || { openId, email, name: null, loginMethod: "email" }),
+      });
+    } catch (error) {
+      console.error("[Auth] Email signup failed:", error);
+      res.status(500).json({ error: "Email signup failed" });
+    }
+  });
+
+  // Request password reset
+  app.post("/api/auth/password-reset-request", async (req: Request, res: Response) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        res.status(400).json({ error: "Email is required" });
+        return;
+      }
+
+      const user = await db.getUserByEmail(email);
+      if (!user) {
+        // Don't reveal whether email exists for security
+        res.json({ success: true });
+        return;
+      }
+
+      // Generate reset token
+      const resetToken = crypto.randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+      await db.createPasswordResetToken(user.id, resetToken, expiresAt);
+
+      // TODO: Send email with reset link
+      // For now, just log it
+      console.log(`[Auth] Password reset token for ${email}: ${resetToken}`);
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("[Auth] Password reset request failed:", error);
+      res.status(500).json({ error: "Password reset request failed" });
+    }
+  });
+
+  // Reset password
+  app.post("/api/auth/password-reset", async (req: Request, res: Response) => {
+    try {
+      const { token, newPassword } = req.body;
+
+      if (!token || !newPassword) {
+        res.status(400).json({ error: "Token and new password are required" });
+        return;
+      }
+
+      // Find reset token
+      const resetToken = await db.getPasswordResetToken(token);
+      if (!resetToken || resetToken.expiresAt < new Date()) {
+        res.status(401).json({ error: "Invalid or expired reset token" });
+        return;
+      }
+
+      // Hash new password
+      const passwordHash = await hashPassword(newPassword);
+
+      // Update user password
+      await db.updateUserPassword(resetToken.userId, passwordHash);
+
+      // Delete used token
+      await db.deletePasswordResetToken(token);
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("[Auth] Password reset failed:", error);
+      res.status(500).json({ error: "Password reset failed" });
     }
   });
 }

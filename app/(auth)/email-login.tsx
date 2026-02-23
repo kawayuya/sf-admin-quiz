@@ -3,12 +3,12 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useColors } from "@/hooks/use-colors";
-import { emailLogin } from "@/lib/_core/api";
-import * as Auth from "@/lib/_core/auth";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function EmailLoginScreen() {
   const router = useRouter();
   const colors = useColors();
+  const { login } = useAuth({ autoFetch: false });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -29,13 +29,10 @@ export default function EmailLoginScreen() {
 
       setIsLoading(true);
       setError(null);
-      console.log("[EmailLogin] Attempting login with email:", email);
+      console.log("[EmailLogin] Attempting login with email:", email, "isSignUp:", isSignUp);
 
-      const result = await emailLogin(email, password, isSignUp);
+      await login(email, password);
       console.log("[EmailLogin] Login successful");
-
-      // Save session token
-      await Auth.setSessionToken(result.sessionToken);
 
       // Navigate to home
       router.replace("/(tabs)");

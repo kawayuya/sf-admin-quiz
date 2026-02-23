@@ -1,45 +1,65 @@
 import { ScreenContainer } from "@/components/screen-container";
-import { startOAuthLogin } from "@/constants/oauth";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useColors } from "@/hooks/use-colors";
-
-type LoginMethod = "google" | "microsoft" | "email" | null;
+import { useAuth } from "@/hooks/use-auth";
 
 export default function LoginScreen() {
   const router = useRouter();
   const colors = useColors();
+  const { login } = useAuth();
+  
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedMethod, setSelectedMethod] = useState<LoginMethod>(null);
 
-  const handleLogin = async (method: LoginMethod) => {
+  const handleLogin = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      setSelectedMethod(method);
-      console.log("[LoginScreen] Starting login with method:", method);
 
-      if (method === "email") {
-        // メールアドレスでのログインは別画面に遷移
-        router.navigate({
-          pathname: "/(auth)/email-login",
-        });
+      // Validate inputs
+      if (!email.trim()) {
+        setError("メールアドレスを入力してください");
+        setIsLoading(false);
         return;
       }
 
-      // Google / Microsoft の場合は OAuth ログイン
-      await startOAuthLogin();
-      // On native, the app will be reopened via deep link after OAuth callback
-      // On web, the page will redirect to the OAuth portal
+      if (!password) {
+        setError("パスワードを入力してください");
+        setIsLoading(false);
+        return;
+      }
+
+      // Email regex validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        setError("有効なメールアドレスを入力してください");
+        setIsLoading(false);
+        return;
+      }
+
+      console.log("[LoginScreen] Starting email login with:", email);
+
+      // Call login API
+      await login(email, password);
+
+      console.log("[LoginScreen] Login successful");
+      // Navigation will be handled by useAuth hook
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "ログインに失敗しました";
       console.error("[LoginScreen] Login error:", err);
       setError(errorMessage);
       setIsLoading(false);
-      setSelectedMethod(null);
     }
+  };
+
+  const handleSignup = () => {
+    router.navigate({
+      pathname: "/(auth)/email-login",
+    });
   };
 
   return (
@@ -50,6 +70,12 @@ export default function LoginScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View className="flex-1 justify-center items-center px-6 py-8 gap-6">
+          {/* Header */}
+          <View className="items-center gap-2">
+            <Text className="text-3xl font-bold text-foreground">ログイン</Text>
+            <Text className="text-sm text-muted">メールアドレスでログイン</Text>
+          </View>
+
           {/* Error Message */}
           {error && (
             <View className="bg-error/10 border border-error rounded-lg p-4 w-full max-w-sm">
@@ -57,84 +83,79 @@ export default function LoginScreen() {
             </View>
           )}
 
-          {/* Login Methods */}
-          <View className="w-full max-w-sm gap-3">
-            <Text className="text-sm font-semibold text-muted text-center mb-2">
-              以下の方法でログイン
-            </Text>
+          {/* Login Form */}
+          <View className="w-full max-w-sm gap-4">
+            {/* Email Input */}
+            <View className="gap-2">
+              <Text className="text-sm font-semibold text-foreground">メールアドレス</Text>
+              <TextInput
+                placeholder="example@example.com"
+                placeholderTextColor={colors.muted}
+                value={email}
+                onChangeText={setEmail}
+                editable={!isLoading}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                className="px-4 py-3 rounded-lg bg-surface border border-border text-foreground"
+                style={{
+                  color: colors.foreground,
+                }}
+              />
+            </View>
 
-            {/* Google Login Button */}
+            {/* Password Input */}
+            <View className="gap-2">
+              <Text className="text-sm font-semibold text-foreground">パスワード</Text>
+              <TextInput
+                placeholder="••••••••"
+                placeholderTextColor={colors.muted}
+                value={password}
+                onChangeText={setPassword}
+                editable={!isLoading}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+                className="px-4 py-3 rounded-lg bg-surface border border-border text-foreground"
+                style={{
+                  color: colors.foreground,
+                }}
+              />
+            </View>
+
+            {/* Forgot Password Link */}
             <Pressable
-              onPress={() => handleLogin("google")}
+              onPress={() => router.navigate({ pathname: "/(auth)/forgot-password" })}
               disabled={isLoading}
-              style={({ pressed }) => [
-                {
-                  opacity: pressed && !isLoading ? 0.8 : 1,
-                },
-              ]}
             >
-              <View className="flex-row items-center justify-center gap-3 px-6 py-4 rounded-full bg-surface border-2 border-border">
-                <Text className="text-xl">🔵</Text>
-                <Text className="text-base font-semibold text-foreground">
-                  {isLoading && selectedMethod === "google" ? "ログイン中..." : "Google アカウントで続ける"}
-                </Text>
-                {isLoading && selectedMethod === "google" && (
-                  <ActivityIndicator color={colors.primary} size="small" />
-                )}
-              </View>
+              <Text className="text-sm text-primary text-right">パスワードを忘れた場合</Text>
             </Pressable>
 
-            {/* Microsoft Login Button */}
+            {/* Login Button */}
             <Pressable
-              onPress={() => handleLogin("microsoft")}
+              onPress={handleLogin}
               disabled={isLoading}
               style={({ pressed }) => [
                 {
-                  opacity: pressed && !isLoading ? 0.8 : 1,
+                  opacity: pressed && !isLoading ? 0.8 : isLoading ? 0.6 : 1,
                 },
               ]}
             >
-              <View className="flex-row items-center justify-center gap-3 px-6 py-4 rounded-full bg-surface border-2 border-border">
-                <Text className="text-xl">⬜</Text>
-                <Text className="text-base font-semibold text-foreground">
-                  {isLoading && selectedMethod === "microsoft" ? "ログイン中..." : "Microsoft アカウントで続ける"}
+              <View className="flex-row items-center justify-center gap-2 px-6 py-4 rounded-lg bg-primary">
+                <Text className="text-base font-semibold text-background">
+                  {isLoading ? "ログイン中..." : "ログイン"}
                 </Text>
-                {isLoading && selectedMethod === "microsoft" && (
-                  <ActivityIndicator color={colors.primary} size="small" />
-                )}
-              </View>
-            </Pressable>
-
-            {/* Email Login Button */}
-            <Pressable
-              onPress={() => handleLogin("email")}
-              disabled={isLoading}
-              style={({ pressed }) => [
-                {
-                  opacity: pressed && !isLoading ? 0.8 : 1,
-                },
-              ]}
-            >
-              <View className="flex-row items-center justify-center gap-3 px-6 py-4 rounded-full bg-surface border-2 border-border">
-                <Text className="text-xl">✉️</Text>
-                <Text className="text-base font-semibold text-foreground">
-                  {isLoading && selectedMethod === "email" ? "ログイン中..." : "メールアドレスで続ける"}
-                </Text>
-                {isLoading && selectedMethod === "email" && (
-                  <ActivityIndicator color={colors.primary} size="small" />
-                )}
+                {isLoading && <ActivityIndicator color={colors.background} size="small" />}
               </View>
             </Pressable>
           </View>
 
-          {/* Footer Text */}
-          <View className="items-center gap-2 px-6">
-            <Text className="text-xs text-muted text-center">
-              セキュアなログイン方法を選択してください
-            </Text>
-            <Text className="text-xs text-muted text-center">
-              初回ログイン時にアカウントが自動作成されます
-            </Text>
+          {/* Signup Link */}
+          <View className="flex-row items-center justify-center gap-2">
+            <Text className="text-sm text-muted">アカウントをお持ちではありませんか？</Text>
+            <Pressable onPress={handleSignup} disabled={isLoading}>
+              <Text className="text-sm font-semibold text-primary">新規登録</Text>
+            </Pressable>
           </View>
         </View>
       </ScrollView>

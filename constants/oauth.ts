@@ -1,4 +1,5 @@
 import * as Linking from "expo-linking";
+import * as WebBrowser from "expo-web-browser";
 import * as ReactNative from "react-native";
 
 // Extract scheme from bundle ID (last segment timestamp, prefixed with "manus")
@@ -8,20 +9,14 @@ const timestamp = bundleId.split(".").pop()?.replace(/^t/, "") ?? "";
 const schemeFromBundleId = `manus${timestamp}`;
 
 const env = {
-  portal: process.env.EXPO_PUBLIC_OAUTH_PORTAL_URL ?? "",
-  server: process.env.EXPO_PUBLIC_OAUTH_SERVER_URL ?? "",
-  appId: process.env.EXPO_PUBLIC_APP_ID ?? "",
-  ownerId: process.env.EXPO_PUBLIC_OWNER_OPEN_ID ?? "",
-  ownerName: process.env.EXPO_PUBLIC_OWNER_NAME ?? "",
   apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL ?? "",
   deepLinkScheme: schemeFromBundleId,
+  // Google OAuth credentials
+  googleClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? "",
+  // Microsoft OAuth credentials
+  microsoftClientId: process.env.EXPO_PUBLIC_MICROSOFT_CLIENT_ID ?? "",
 };
 
-export const OAUTH_PORTAL_URL = env.portal;
-export const OAUTH_SERVER_URL = env.server;
-export const APP_ID = env.appId;
-export const OWNER_OPEN_ID = env.ownerId;
-export const OWNER_NAME = env.ownerName;
 export const API_BASE_URL = env.apiBaseUrl;
 
 /**
@@ -52,17 +47,6 @@ export function getApiBaseUrl(): string {
 export const SESSION_TOKEN_KEY = "app_session_token";
 export const USER_INFO_KEY = "manus-runtime-user-info";
 
-const encodeState = (value: string) => {
-  if (typeof globalThis.btoa === "function") {
-    return globalThis.btoa(value);
-  }
-  const BufferImpl = (globalThis as Record<string, any>).Buffer;
-  if (BufferImpl) {
-    return BufferImpl.from(value, "utf-8").toString("base64");
-  }
-  return value;
-};
-
 /**
  * Get the redirect URI for OAuth callback.
  * - Web: uses API server callback endpoint
@@ -78,15 +62,58 @@ export const getRedirectUri = () => {
   }
 };
 
-export const getLoginUrl = () => {
-  const redirectUri = getRedirectUri();
-  const state = encodeState(redirectUri);
+/**
+ * Generate a random state parameter for OAuth security
+ */
+const generateState = (): string => {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let state = "";
+  for (let i = 0; i < 32; i++) {
+    state += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return state;
+};
 
-  const url = new URL(`${OAUTH_PORTAL_URL}/app-auth`);
-  url.searchParams.set("appId", APP_ID);
-  url.searchParams.set("redirectUri", redirectUri);
+/**
+ * Get Google OAuth login URL
+ */
+export const getGoogleLoginUrl = (): string => {
+  const redirectUri = getRedirectUri();
+  const state = generateState();
+  
+  // Store state in sessionStorage for verification
+  if (typeof window !== "undefined" && window.sessionStorage) {
+    window.sessionStorage.setItem("oauth_state", state);
+  }
+
+  const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+  url.searchParams.set("client_id", env.googleClientId);
+  url.searchParams.set("redirect_uri", redirectUri);
+  url.searchParams.set("response_type", "code");
+  url.searchParams.set("scope", "openid profile email");
   url.searchParams.set("state", state);
-  url.searchParams.set("type", "signIn");
+
+  return url.toString();
+};
+
+/**
+ * Get Microsoft OAuth login URL
+ */
+export const getMicrosoftLoginUrl = (): string => {
+  const redirectUri = getRedirectUri();
+  const state = generateState();
+  
+  // Store state in sessionStorage for verification
+  if (typeof window !== "undefined" && window.sessionStorage) {
+    window.sessionStorage.setItem("oauth_state", state);
+  }
+
+  const url = new URL("https://login.microsoftonline.com/common/oauth2/v2.0/authorize");
+  url.searchParams.set("client_id", env.microsoftClientId);
+  url.searchParams.set("redirect_uri", redirectUri);
+  url.searchParams.set("response_type", "code");
+  url.searchParams.set("scope", "openid profile email");
+  url.searchParams.set("state", state);
 
   return url.toString();
 };
@@ -97,35 +124,34 @@ export const getLoginUrl = () => {
  * On native platforms (iOS/Android), open the system browser directly so
  * the OAuth callback returns via deep link to the app.
  *
- * On web, this simply redirects to the login URL.
- *
- * @returns Always null, the callback is handled via deep link.
+ * On web, open the login URL in the system browser using expo-web-browser.
  */
-export async function startOAuthLogin(): Promise<string | null> {
-  const loginUrl = getLoginUrl();
+export async function startOAuthLogin(provider: "google" | "microsoft"): Promise<void> {
+  const loginUrl = provider === "google" ? getGoogleLoginUrl() : getMicrosoftLoginUrl();
 
   if (ReactNative.Platform.OS === "web") {
-    // On web, just redirect
-    if (typeof window !== "undefined") {
-      window.location.href = loginUrl;
+    // On web, open in system browser using expo-web-browser
+    try {
+      const result = await WebBrowser.openBrowserAsync(loginUrl);
+      console.log("[OAuth] Browser result:", result);
+    } catch (error) {
+      console.error("[OAuth] Failed to open browser:", error);
+      throw error;
     }
-    return null;
+    return;
   }
 
+  // On native, use Linking to open the URL
   const supported = await Linking.canOpenURL(loginUrl);
   if (!supported) {
     console.warn("[OAuth] Cannot open login URL: URL scheme not supported");
-    // 可考虑抛出错误或返回错误状态，让调用方处理
-    return null;
+    throw new Error("ログインURLを開くことができません");
   }
 
   try {
     await Linking.openURL(loginUrl);
   } catch (error) {
     console.error("[OAuth] Failed to open login URL:", error);
-    // 可考虑抛出错误让调用方处理
+    throw error;
   }
-
-  // The OAuth callback will reopen the app via deep link.
-  return null;
 }
