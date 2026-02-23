@@ -22,24 +22,30 @@ export function useAuth(options?: UseAuthOptions) {
       // Web platform: use cookie-based auth, fetch user from API
       if (Platform.OS === "web") {
         console.log("[useAuth] Web platform: fetching user from API...");
-        const apiUser = await Api.getMe();
-        console.log("[useAuth] API user response:", apiUser);
+        try {
+          const apiUser = await Api.getMe();
+          console.log("[useAuth] API user response:", apiUser);
 
-        if (apiUser) {
-          const userInfo: Auth.User = {
-            id: apiUser.id,
-            openId: apiUser.openId,
-            name: apiUser.name,
-            email: apiUser.email,
-            loginMethod: apiUser.loginMethod,
-            lastSignedIn: new Date(apiUser.lastSignedIn),
-          };
-          setUser(userInfo);
-          // Cache user info in localStorage for faster subsequent loads
-          await Auth.setUserInfo(userInfo);
-          console.log("[useAuth] Web user set from API:", userInfo);
-        } else {
-          console.log("[useAuth] Web: No authenticated user from API");
+          if (apiUser) {
+            const userInfo: Auth.User = {
+              id: apiUser.id,
+              openId: apiUser.openId,
+              name: apiUser.name,
+              email: apiUser.email,
+              loginMethod: apiUser.loginMethod,
+              lastSignedIn: new Date(apiUser.lastSignedIn),
+            };
+            setUser(userInfo);
+            // Cache user info in localStorage for faster subsequent loads
+            await Auth.setUserInfo(userInfo);
+            console.log("[useAuth] Web user set from API:", userInfo);
+          } else {
+            console.log("[useAuth] Web: No authenticated user from API");
+            setUser(null);
+            await Auth.clearUserInfo();
+          }
+        } catch (err) {
+          console.error("[useAuth] Web: Error fetching user from API:", err);
           setUser(null);
           await Auth.clearUserInfo();
         }
