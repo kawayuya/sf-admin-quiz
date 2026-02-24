@@ -1,5 +1,5 @@
-import { ScrollView, Text, View, Pressable, FlatList } from 'react-native';
-import { ScreenContainer } from '@/components/screen-container';
+import { ScrollView, Text, View, Pressable, StyleSheet, FlatList } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQuiz } from '@/lib/quiz-context';
 import { useColors } from '@/hooks/use-colors';
@@ -39,7 +39,6 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    // 不正解問題の数を計算
     let count = 0;
     sessions.forEach((session) => {
       session.answers.forEach((answer) => {
@@ -82,196 +81,365 @@ export default function HomeScreen() {
     .sort((a, b) => a.percentage - b.percentage)
     .slice(0, 3);
 
-  // 統計情報を計算
   const totalSessions = sessions.length;
   const totalCorrect = sessions.reduce((sum, s) => sum + s.score, 0);
   const totalQuestions = sessions.reduce((sum, s) => sum + s.totalQuestions, 0);
   const averageScore = totalSessions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
   const maxScore = sessions.length > 0 ? Math.max(...sessions.map(s => Math.round((s.score / s.totalQuestions) * 100))) : 0;
 
+  const styles = StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+    },
+    header: {
+      alignItems: 'center',
+      marginBottom: 24,
+      marginTop: 8,
+    },
+    headerTop: {
+      width: '100%',
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    logoutButton: {
+      backgroundColor: colors.error + '20',
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    logoutText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.error,
+    },
+    title: {
+      fontSize: 32,
+      fontWeight: '700',
+      color: colors.primary,
+      marginBottom: 4,
+    },
+    subtitle: {
+      fontSize: 14,
+      color: colors.muted,
+      marginBottom: 8,
+    },
+    userInfo: {
+      fontSize: 12,
+      color: colors.muted,
+      marginTop: 8,
+    },
+    mainCTA: {
+      backgroundColor: colors.primary,
+      borderRadius: 16,
+      paddingVertical: 32,
+      paddingHorizontal: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 24,
+    },
+    mainEmoji: {
+      fontSize: 48,
+      marginBottom: 12,
+    },
+    mainButtonText: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors.background,
+      marginBottom: 8,
+    },
+    mainButtonSubtext: {
+      fontSize: 14,
+      color: colors.background + '80',
+    },
+    weakPointCTA: {
+      backgroundColor: colors.warning + '20',
+      borderWidth: 2,
+      borderColor: colors.warning,
+      borderRadius: 16,
+      paddingVertical: 24,
+      paddingHorizontal: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 32,
+    },
+    weakPointEmoji: {
+      fontSize: 36,
+      marginBottom: 8,
+    },
+    weakPointTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.warning,
+      marginBottom: 4,
+    },
+    weakPointSubtext: {
+      fontSize: 14,
+      color: colors.warning + '80',
+      marginBottom: 8,
+    },
+    weakPointHint: {
+      fontSize: 12,
+      color: colors.warning + '60',
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.foreground,
+      marginBottom: 16,
+    },
+    categoryContainer: {
+      marginBottom: 16,
+      gap: 8,
+    },
+    categoryItem: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingVertical: 16,
+      paddingHorizontal: 16,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    categoryText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.foreground,
+      flex: 1,
+    },
+    categoryArrow: {
+      fontSize: 16,
+      color: colors.primary,
+    },
+    statsContainer: {
+      marginBottom: 24,
+    },
+    statItem: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingVertical: 16,
+      paddingHorizontal: 16,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    statLabel: {
+      fontSize: 14,
+      color: colors.muted,
+    },
+    statValue: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: colors.primary,
+    },
+    statValueSuccess: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: colors.success,
+    },
+    emptyState: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingVertical: 24,
+      paddingHorizontal: 16,
+      alignItems: 'center',
+      marginBottom: 24,
+    },
+    emptyStateText: {
+      fontSize: 14,
+      color: colors.muted,
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+    weakPointsBox: {
+      backgroundColor: colors.warning + '10',
+      borderWidth: 1,
+      borderColor: colors.warning + '30',
+      borderRadius: 8,
+      paddingVertical: 16,
+      paddingHorizontal: 16,
+      marginBottom: 24,
+    },
+    weakPointsTitle: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.warning,
+      marginBottom: 12,
+    },
+    weakPointItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    weakPointItemText: {
+      fontSize: 14,
+      color: colors.foreground,
+      flex: 1,
+    },
+    weakPointItemScore: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.error,
+    },
+    detailStatsButton: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingVertical: 16,
+      paddingHorizontal: 16,
+      alignItems: 'center',
+    },
+    detailStatsText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+  });
+
   return (
-    <ScreenContainer className="p-4">
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* ヘッダー */}
-        <View className="items-center gap-2 mb-4 mt-4">
-          <View className="w-full flex-row justify-between items-center mb-2">
-            <View className="flex-1" />
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
+            <View style={{ flex: 1 }} />
             {user && (
               <Pressable
                 onPress={handleLogout}
-                style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
+                style={({ pressed }) => [styles.logoutButton, pressed && { opacity: 0.7 }]}
               >
-                <View className="bg-error/10 rounded-lg px-3 py-2">
-                  <Text className="text-xs font-semibold text-error">ログアウト</Text>
-                </View>
+                <Text style={styles.logoutText}>ログアウト</Text>
               </Pressable>
             )}
           </View>
-          <Text className="text-4xl font-bold text-primary">
-            SF Admin Quiz
-          </Text>
-          <Text className="text-base text-muted">
-            Salesforce認定アドミニストレーター試験対策
-          </Text>
+          <Text style={styles.title}>SF Admin Quiz</Text>
+          <Text style={styles.subtitle}>Salesforce認定アドミニストレーター試験対策</Text>
           {user && (
-            <Text className="text-xs text-muted mt-2">
+            <Text style={styles.userInfo}>
               ログイン: {user.name || user.email}
             </Text>
           )}
         </View>
 
-        {/* メインCTA - 通常モード */}
+        {/* メインCTA */}
         <Pressable
           onPress={handleStartQuiz}
           style={({ pressed }) => [
-            {
-              opacity: pressed ? 0.9 : 1,
-              transform: [{ scale: pressed ? 0.97 : 1 }],
-            },
+            styles.mainCTA,
+            pressed && { opacity: 0.9, transform: [{ scale: 0.97 }] },
           ]}
         >
-          <View className="bg-primary rounded-2xl p-8 items-center justify-center mb-6">
-            <Text className="text-5xl mb-3">📚</Text>
-            <Text className="text-2xl font-bold text-background mb-2">
-              クイズを始める
-            </Text>
-            <Text className="text-sm text-background/80">
-              10問出題・即時フィードバック
-            </Text>
-          </View>
+          <Text style={styles.mainEmoji}>📚</Text>
+          <Text style={styles.mainButtonText}>クイズを始める</Text>
+          <Text style={styles.mainButtonSubtext}>10問出題・即時フィードバック</Text>
         </Pressable>
 
-        {/* 苦手克服モード CTA */}
+        {/* 苦手克服モード */}
         {incorrectCount > 0 && (
           <Pressable
             onPress={handleStartWeakPointQuiz}
             style={({ pressed }) => [
-              {
-                opacity: pressed ? 0.9 : 1,
-                transform: [{ scale: pressed ? 0.97 : 1 }],
-              },
+              styles.weakPointCTA,
+              pressed && { opacity: 0.9, transform: [{ scale: 0.97 }] },
             ]}
           >
-            <View className="bg-warning/20 border-2 border-warning rounded-2xl p-6 items-center justify-center mb-8">
-              <Text className="text-4xl mb-2">🎯</Text>
-              <Text className="text-xl font-bold text-warning mb-1">
-                苦手克服モード
-              </Text>
-              <Text className="text-sm text-warning/80 mb-2">
-                不正解だった{incorrectCount}問を復習
-              </Text>
-              <Text className="text-xs text-warning/60">
-                タップして開始
-              </Text>
-            </View>
+            <Text style={styles.weakPointEmoji}>🎯</Text>
+            <Text style={styles.weakPointTitle}>苦手克服モード</Text>
+            <Text style={styles.weakPointSubtext}>
+              不正解だった{incorrectCount}問を復習
+            </Text>
+            <Text style={styles.weakPointHint}>タップして開始</Text>
           </Pressable>
         )}
 
-        {/* カテゴリ別クイズセクション */}
-        <View className="mb-6">
-          <Text className="text-lg font-bold text-foreground mb-4">
-            📚 カテゴリから学ぶ
-          </Text>
-          <View className="gap-2">
-            {CATEGORIES.map((category) => (
-              <Pressable
-                key={category}
-                onPress={() => handleStartCategoryQuiz(category)}
-                style={({ pressed }) => [
-                  {
-                    opacity: pressed ? 0.9 : 1,
-                    transform: [{ scale: pressed ? 0.97 : 1 }],
-                  },
-                ]}
-              >
-                <View className="bg-surface border border-border rounded-lg p-4 flex-row justify-between items-center">
-                  <Text className="text-sm font-semibold text-foreground flex-1">
-                    {category}
-                  </Text>
-                  <Text className="text-lg text-primary">→</Text>
-                </View>
-              </Pressable>
-            ))}
-          </View>
+        {/* カテゴリセクション */}
+        <Text style={styles.sectionTitle}>📚 カテゴリから学ぶ</Text>
+        <View style={styles.categoryContainer}>
+          {CATEGORIES.map((category) => (
+            <Pressable
+              key={category}
+              onPress={() => handleStartCategoryQuiz(category)}
+              style={({ pressed }) => [
+                styles.categoryItem,
+                pressed && { opacity: 0.7 },
+              ]}
+            >
+              <Text style={styles.categoryText}>{category}</Text>
+              <Text style={styles.categoryArrow}>→</Text>
+            </Pressable>
+          ))}
         </View>
 
         {/* 統計情報 */}
         {totalSessions > 0 ? (
           <>
-            <View className="mb-6">
-              <Text className="text-lg font-bold text-foreground mb-4">
-                📊 成績サマリー
-              </Text>
-              <View className="gap-3">
-                <View className="bg-surface rounded-lg p-4 border border-border flex-row justify-between items-center">
-                  <Text className="text-sm text-muted">受験回数</Text>
-                  <Text className="text-2xl font-bold text-primary">
-                    {totalSessions}回
-                  </Text>
-                </View>
-                <View className="bg-surface rounded-lg p-4 border border-border flex-row justify-between items-center">
-                  <Text className="text-sm text-muted">平均スコア</Text>
-                  <Text className="text-2xl font-bold text-success">
-                    {averageScore}%
-                  </Text>
-                </View>
-                <View className="bg-surface rounded-lg p-4 border border-border flex-row justify-between items-center">
-                  <Text className="text-sm text-muted">最高スコア</Text>
-                  <Text className="text-2xl font-bold text-primary">
-                    {maxScore}%
-                  </Text>
-                </View>
+            <Text style={styles.sectionTitle}>📊 成績サマリー</Text>
+            <View style={styles.statsContainer}>
+              <View style={styles.statItem}>
+                <Text style={styles.statLabel}>受験回数</Text>
+                <Text style={styles.statValue}>{totalSessions}回</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statLabel}>平均スコア</Text>
+                <Text style={styles.statValueSuccess}>{averageScore}%</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statLabel}>最高スコア</Text>
+                <Text style={styles.statValue}>{maxScore}%</Text>
               </View>
             </View>
 
             {/* 弱点カテゴリ */}
             {weakCategories.length > 0 && (
-              <View className="mb-6 bg-warning/10 rounded-lg p-4 border border-warning/30">
-                <Text className="font-bold text-warning mb-3">
-                  ⚠️ 弱点カテゴリ
-                </Text>
-                <View className="gap-2">
-                  {weakCategories.map((cat, index) => (
-                    <View key={index} className="flex-row justify-between items-center">
-                      <Text className="text-sm text-foreground flex-1">
-                        {cat.category}
-                      </Text>
-                      <Text className="text-sm font-bold text-error">
-                        {cat.percentage}%
-                      </Text>
-                    </View>
-                  ))}
-                </View>
+              <View style={styles.weakPointsBox}>
+                <Text style={styles.weakPointsTitle}>⚠️ 弱点カテゴリ</Text>
+                {weakCategories.map((cat, index) => (
+                  <View key={index} style={styles.weakPointItem}>
+                    <Text style={styles.weakPointItemText}>{cat.category}</Text>
+                    <Text style={styles.weakPointItemScore}>{cat.percentage}%</Text>
+                  </View>
+                ))}
               </View>
             )}
+
+            {/* 詳細統計ボタン */}
+            <Pressable
+              onPress={() => router.push('/stats')}
+              style={({ pressed }) => [
+                styles.detailStatsButton,
+                pressed && { opacity: 0.7 },
+              ]}
+            >
+              <Text style={styles.detailStatsText}>詳細な統計を見る →</Text>
+            </Pressable>
           </>
         ) : (
-          <View className="bg-surface rounded-lg p-6 border border-border items-center mb-6">
-            <Text className="text-base text-muted text-center">
-              まだクイズを受験していません。
-              {'\n'}「クイズを始める」をタップして開始しましょう！
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>
+              まだクイズを受験していません。{'\n'}「クイズを始める」をタップして開始しましょう！
             </Text>
           </View>
         )}
-
-        {/* 詳細統計へのリンク */}
-        {totalSessions > 0 && (
-          <Pressable
-            onPress={() => router.push('/stats')}
-            style={({ pressed }) => [
-              {
-                opacity: pressed ? 0.9 : 1,
-              },
-            ]}
-          >
-            <View className="bg-surface border border-border rounded-lg p-4 items-center">
-              <Text className="font-semibold text-primary">
-                詳細な統計を見る →
-              </Text>
-            </View>
-          </Pressable>
-        )}
       </ScrollView>
-    </ScreenContainer>
+    </SafeAreaView>
   );
 }
