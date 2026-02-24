@@ -1,4 +1,3 @@
-import "@/global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -6,7 +5,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 import { Platform, ActivityIndicator, View } from "react-native";
-import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { QuizProvider } from "@/lib/quiz-context";
 import {
@@ -102,7 +100,7 @@ function RootLayoutContent() {
   if (loading) {
     return (
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <View className="flex-1 items-center justify-center bg-background">
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#ffffff" }}>
           <ActivityIndicator size="large" color="#0a7ea4" />
         </View>
       </GestureHandlerRootView>

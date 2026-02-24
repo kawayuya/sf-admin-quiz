@@ -1,7 +1,6 @@
-import { View, type ViewProps } from "react-native";
+import { View, type ViewProps, StyleSheet } from "react-native";
 import { SafeAreaView, type Edge } from "react-native-safe-area-context";
-
-import { cn } from "@/lib/utils";
+import { useColors } from "@/hooks/use-colors";
 
 export interface ScreenContainerProps extends ViewProps {
   /**
@@ -10,17 +9,17 @@ export interface ScreenContainerProps extends ViewProps {
    */
   edges?: Edge[];
   /**
-   * Tailwind className for the content area.
+   * Style object for the content area.
    */
-  className?: string;
+  contentStyle?: ViewProps["style"];
   /**
-   * Additional className for the outer container (background layer).
+   * Style object for the outer container (background layer).
    */
-  containerClassName?: string;
+  containerStyle?: ViewProps["style"];
   /**
-   * Additional className for the SafeAreaView (content layer).
+   * Style object for the SafeAreaView (content layer).
    */
-  safeAreaClassName?: string;
+  safeAreaStyle?: ViewProps["style"];
 }
 
 /**
@@ -31,8 +30,8 @@ export interface ScreenContainerProps extends ViewProps {
  *
  * Usage:
  * ```tsx
- * <ScreenContainer className="p-4">
- *   <Text className="text-2xl font-bold text-foreground">
+ * <ScreenContainer contentStyle={{ padding: 16 }}>
+ *   <Text style={{ fontSize: 24, fontWeight: "700" }}>
  *     Welcome
  *   </Text>
  * </ScreenContainer>
@@ -41,27 +40,37 @@ export interface ScreenContainerProps extends ViewProps {
 export function ScreenContainer({
   children,
   edges = ["top", "left", "right"],
-  className,
-  containerClassName,
-  safeAreaClassName,
+  contentStyle,
+  containerStyle,
+  safeAreaStyle,
   style,
   ...props
 }: ScreenContainerProps) {
+  const colors = useColors();
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    safeArea: {
+      flex: 1,
+    },
+    content: {
+      flex: 1,
+    },
+  });
+
   return (
     <View
-      className={cn(
-        "flex-1",
-        "bg-background",
-        containerClassName
-      )}
+      style={[styles.container, containerStyle]}
       {...props}
     >
       <SafeAreaView
         edges={edges}
-        className={cn("flex-1", safeAreaClassName)}
-        style={style}
+        style={[styles.safeArea, safeAreaStyle, style]}
       >
-        <View className={cn("flex-1", className)}>{children}</View>
+        <View style={[styles.content, contentStyle]}>{children}</View>
       </SafeAreaView>
     </View>
   );
