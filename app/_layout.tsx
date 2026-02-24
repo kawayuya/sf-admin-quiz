@@ -1,4 +1,3 @@
-import "@/global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -6,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 import { Platform, ActivityIndicator, View } from "react-native";
-import "@/lib/_core/nativewind-pressable";
+
 import { ThemeProvider } from "@/lib/theme-provider";
 import { QuizProvider } from "@/lib/quiz-context";
 import {
