@@ -117,3 +117,16 @@
 - [ ] expo-web-browser を使用した OAuth ログイン実装
 - [ ] OAuth コールバック処理実装
 - [ ] Expo Go でテスト
+
+## メール認証システム実装フェーズ
+
+- [x] データベーススキーマ拡張（passwordHash、passwordResetTokens）
+- [x] バックエンド API エンドポイント実装（email-login、signup、password-reset）
+- [x] パスワード暗号化（crypto.scrypt）
+- [x] JWT セッション管理実装
+- [x] フロントエンド useAuth フック実装
+- [x] ログイン画面実装（StyleSheet）
+- [x] アカウント作成画面実装
+- [ ] **ログアウト後の再ログイン問題を修正** ← 現在のタスク
+- [ ] セッショントークンの永続化とリフレッシュ機能
+- [ ] Expo Go での完全なテスト（ログイン→ホーム→ログアウト→再ログイン）

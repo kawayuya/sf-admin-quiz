@@ -161,7 +161,10 @@ export function registerOAuthRoutes(app: Express) {
 
   app.post("/api/auth/logout", (req: Request, res: Response) => {
     const cookieOptions = getSessionCookieOptions(req);
-    res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+    console.log("[Auth] Logout: clearing cookie with options:", cookieOptions);
+    res.clearCookie(COOKIE_NAME, cookieOptions);
+    res.clearCookie(COOKIE_NAME, { path: "/", httpOnly: true });
+    console.log("[Auth] Logout: cookie cleared completely");
     res.json({ success: true });
   });
 
@@ -207,46 +210,69 @@ export function registerOAuthRoutes(app: Express) {
   app.post("/api/auth/email-login", async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;
+      console.log("[Auth] Email login attempt:", { email });
 
       if (!email || !password) {
+        console.log("[Auth] Missing email or password");
         res.status(400).json({ error: "Email and password are required" });
         return;
       }
 
       // Find user by email
       const user = await db.getUserByEmail(email);
+      console.log("[Auth] User lookup result:", { userId: user?.id, userEmail: user?.email, hasHash: !!user?.passwordHash });
+      
       if (!user || !user.passwordHash) {
+        console.log("[Auth] User not found or no password hash");
         res.status(401).json({ error: "Invalid email or password" });
         return;
       }
 
       // Verify password
+      console.log("[Auth] Starting password verification");
       const isPasswordValid = await verifyPassword(password, user.passwordHash);
+      console.log("[Auth] Password verification result:", isPasswordValid);
+      
       if (!isPasswordValid) {
+        console.log("[Auth] Password verification failed");
         res.status(401).json({ error: "Invalid email or password" });
         return;
       }
+      
+      console.log("[Auth] Password verified successfully");
 
       // Create session token
+      console.log("[Auth] Creating session token...");
       const sessionToken = await sdk.createSessionToken(user.openId, {
         name: user.name || "",
         expiresInMs: ONE_YEAR_MS,
       });
+      console.log("[Auth] Session token created:", { token: sessionToken ? `${sessionToken.substring(0, 50)}...` : null });
 
       // Set cookie
+      console.log("[Auth] Setting cookie...");
       const cookieOptions = getSessionCookieOptions(req);
+      console.log("[Auth] Cookie options:", cookieOptions);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+      console.log("[Auth] Cookie set with token:", sessionToken.substring(0, 50) + "...");
+      console.log("[Auth] Response headers before sending:", res.getHeaders());
 
       // Update last signed in
+      console.log("[Auth] Updating last signed in...");
       await db.upsertUser({
         openId: user.openId,
         lastSignedIn: new Date(),
       });
+      console.log("[Auth] Last signed in updated");
 
-      res.json({
+      console.log("[Auth] Sending response...");
+      const response = {
         app_session_id: sessionToken,
         user: buildUserResponse(user),
-      });
+      };
+      console.log("[Auth] Response object:", { hasToken: !!response.app_session_id, hasUser: !!response.user });
+      res.json(response);
+      console.log("[Auth] Response sent successfully");
     } catch (error) {
       console.error("[Auth] Email login failed:", error);
       res.status(500).json({ error: "Email login failed" });

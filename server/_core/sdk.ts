@@ -187,24 +187,30 @@ class SDKServer {
     }
 
     try {
+      console.log("[Auth] verifySession called with token:", cookieValue ? `${cookieValue.substring(0, 50)}...` : null);
       const secretKey = this.getSessionSecret();
+      console.log("[Auth] Secret key obtained");
       const { payload } = await jwtVerify(cookieValue, secretKey, {
         algorithms: ["HS256"],
       });
+      console.log("[Auth] JWT verified successfully");
       const { openId, appId, name } = payload as Record<string, unknown>;
+      console.log("[Auth] Payload extracted:", { openId, appId, name });
 
-      if (!isNonEmptyString(openId) || !isNonEmptyString(appId) || !isNonEmptyString(name)) {
-        console.warn("[Auth] Session payload missing required fields");
+      // openId と appId は必須、name は空文字列でも許可
+      if (!isNonEmptyString(openId) || !isNonEmptyString(appId)) {
+        console.warn("[Auth] Session payload missing required fields (openId or appId)");
         return null;
       }
 
       return {
         openId,
         appId,
-        name,
+        name: typeof name === "string" ? name : "",
       };
     } catch (error) {
       console.warn("[Auth] Session verification failed", String(error));
+      console.warn("[Auth] Error details:", error instanceof Error ? error.message : String(error));
       return null;
     }
   }

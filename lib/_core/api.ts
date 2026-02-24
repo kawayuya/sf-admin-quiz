@@ -29,7 +29,13 @@ export async function apiCall<T>(endpoint: string, options: RequestInit = {}): P
       console.log("[API] Authorization header added");
     }
   } else {
-    console.log("[API] apiCall:", { endpoint, platform: "web", method: options.method || "GET" });
+    const memoryToken = (global as any).__sessionToken;
+    if (memoryToken) {
+      headers["Authorization"] = `Bearer ${memoryToken}`;
+      console.log("[API] Web platform: using Bearer token from memory");
+    } else {
+      console.log("[API] Web platform: using cookie-based auth");
+    }
   }
 
   const baseUrl = getApiBaseUrl();

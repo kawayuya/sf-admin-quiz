@@ -78,6 +78,14 @@ export function useAuth(options?: UseAuthOptions) {
           await Auth.setSessionToken(response.sessionToken);
         }
 
+        // For web platform: store token in memory and use Bearer auth
+        // Cookies are unreliable in Expo Go preview context
+        if (Platform.OS === "web" && response.sessionToken) {
+          console.log("[useAuth] Web platform: storing Bearer token in memory...");
+          // Store in memory for this session
+          (global as any).__sessionToken = response.sessionToken;
+        }
+
         // Fetch user info to verify login
         await fetchUser();
       } catch (err) {
@@ -101,6 +109,10 @@ export function useAuth(options?: UseAuthOptions) {
     } finally {
       await Auth.removeSessionToken().catch(() => {});
       await Auth.clearUserInfo().catch(() => {});
+      if (Platform.OS === "web") {
+        (global as any).__sessionToken = null;
+        console.log("[useAuth] Memory token cleared");
+      }
       setUser(null);
       setError(null);
     }

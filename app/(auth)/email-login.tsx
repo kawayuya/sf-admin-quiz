@@ -48,6 +48,7 @@ export default function EmailLoginScreen() {
       const errorMessage = err instanceof Error ? err.message : "ログインに失敗しました";
       console.error("[EmailLogin] Error:", err);
       setError(errorMessage);
+    } finally {
       setIsLoading(false);
     }
   };
