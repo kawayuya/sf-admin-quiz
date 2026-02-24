@@ -78,7 +78,7 @@ const config: ExpoConfig = {
         category: ["BROWSABLE", "DEFAULT"],
       },
     ],
-  } as any, // Temporarily disabled for Web-only build
+  },
   web: {
     bundler: "metro",
     output: "static",
@@ -113,16 +113,15 @@ const config: ExpoConfig = {
         },
       },
     ],
-    // Temporarily disabled Android build properties for Web-only build
-    // [
-    //   "expo-build-properties",
-    //   {
-    //     android: {
-    //       buildArchs: ["armeabi-v7a", "arm64-v8a"],
-    //       minSdkVersion: 24,
-    //     },
-    //   },
-    // ],
+    [
+      "expo-build-properties",
+      {
+        android: {
+          buildArchs: ["armeabi-v7a", "arm64-v8a"],
+          minSdkVersion: 24,
+        },
+      },
+    ],
   ],
   experiments: {
     typedRoutes: true,
