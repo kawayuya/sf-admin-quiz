@@ -83,7 +83,7 @@ const config: ExpoConfig = {
     bundler: "metro",
     output: "static",
     favicon: "./assets/images/favicon.png",
-    baseUrl: "/",
+    baseUrl: "/sf-admin-quiz/",
     bundleAssets: true,
   },
   plugins: [
