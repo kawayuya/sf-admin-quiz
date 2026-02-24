@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
-import { ScrollView, Text, View, Pressable } from 'react-native';
-import { ScreenContainer } from '@/components/screen-container';
+import { ScrollView, Text, View, Pressable, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuiz } from '@/lib/quiz-context';
 import { useColors } from '@/hooks/use-colors';
 import { useRouter } from 'expo-router';
@@ -16,6 +16,153 @@ export default function ResultScreen() {
   const { state, resetQuiz, sessions, loadSessions, getCategoryStats } = useQuiz();
   const { isAuthenticated } = useAuth();
   const saveResultMutation = trpc.quiz.saveResult.useMutation();
+
+  const createStyles = () => StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+    },
+    modeBadge: {
+      borderRadius: 8,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      marginBottom: 16,
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+    },
+    modeBadgeText: {
+      fontSize: 12,
+      fontWeight: '700' as const,
+    },
+    scoreSection: {
+      alignItems: 'center' as const,
+      gap: 16,
+      marginBottom: 32,
+      marginTop: 32,
+    },
+    scoreValue: {
+      fontSize: 48,
+      fontWeight: '700' as const,
+    },
+    percentage: {
+      fontSize: 24,
+      fontWeight: '600' as const,
+    },
+    scoreMessage: {
+      fontSize: 14,
+    },
+    scoreBox: {
+      borderWidth: 1,
+      borderRadius: 12,
+      paddingVertical: 24,
+      paddingHorizontal: 16,
+      marginBottom: 24,
+    },
+    scoreProgressBar: {
+      height: 8,
+      borderRadius: 4,
+      overflow: 'hidden' as const,
+      marginBottom: 16,
+    },
+    scoreProgressFill: {
+      height: '100%' as const,
+      borderRadius: 4,
+    },
+    scoreRow: {
+      flexDirection: 'row' as const,
+      justifyContent: 'space-between',
+      marginTop: 8,
+    },
+    scoreLabel: {
+      fontSize: 14,
+    },
+    scoreCount: {
+      fontSize: 14,
+      fontWeight: '600' as const,
+    },
+    categorySection: {
+      marginBottom: 24,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '700' as const,
+      marginBottom: 16,
+    },
+    categoryItem: {
+      borderWidth: 1,
+      borderRadius: 8,
+      paddingVertical: 16,
+      paddingHorizontal: 16,
+      marginBottom: 12,
+    },
+    categoryHeader: {
+      flexDirection: 'row' as const,
+      justifyContent: 'space-between',
+      alignItems: 'center' as const,
+      marginBottom: 8,
+    },
+    categoryName: {
+      fontSize: 14,
+      fontWeight: '600' as const,
+      flex: 1,
+    },
+    categoryScore: {
+      fontSize: 14,
+      fontWeight: '700' as const,
+    },
+    categoryProgressBar: {
+      height: 6,
+      borderRadius: 3,
+      overflow: 'hidden' as const,
+    },
+    categoryProgressFill: {
+      height: '100%' as const,
+      borderRadius: 3,
+    },
+    categoryDetail: {
+      fontSize: 12,
+      marginTop: 8,
+    },
+    weakPointsBox: {
+      borderWidth: 1,
+      borderRadius: 8,
+      paddingVertical: 16,
+      paddingHorizontal: 16,
+      marginBottom: 24,
+    },
+    weakPointsTitle: {
+      fontSize: 14,
+      fontWeight: '700' as const,
+      marginBottom: 12,
+    },
+    weakPointItem: {
+      fontSize: 14,
+      marginBottom: 8,
+    },
+    weakPointsHint: {
+      fontSize: 12,
+      marginTop: 12,
+    },
+    buttonContainer: {
+      gap: 12,
+      marginTop: 'auto' as const,
+    },
+    button: {
+      paddingVertical: 16,
+      borderRadius: 8,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+    },
+    buttonText: {
+      fontSize: 16,
+      fontWeight: '700' as const,
+    },
+  });
 
   useEffect(() => {
     saveSession();
@@ -79,160 +226,157 @@ export default function ResultScreen() {
     .slice(0, 3);
 
   const handleRetry = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     resetQuiz();
     router.push('/(tabs)/quiz');
   };
 
   const handleHome = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     resetQuiz();
     router.push('/(tabs)');
   };
 
+  const styles = createStyles();
+
+  const getScoreColor = (pct: number) => {
+    if (pct >= 80) return colors.success;
+    if (pct >= 60) return colors.warning;
+    return colors.error;
+  };
+
   return (
-    <ScreenContainer className="p-4">
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* モード表示 */}
         {state.mode === 'weak-point' && (
-          <View className="bg-warning/20 border border-warning rounded-lg p-2 mb-4 flex-row items-center">
-            <Text className="text-xs font-bold text-warning">🎯 苦手克服モードの結果</Text>
+          <View style={[styles.modeBadge, { backgroundColor: colors.warning + '20', borderColor: colors.warning, borderWidth: 1 }]}>
+            <Text style={[styles.modeBadgeText, { color: colors.warning }]}>🎯 苦手克服モードの結果</Text>
           </View>
         )}
         {state.mode === 'category' && (
-          <View className="bg-primary/20 border border-primary rounded-lg p-2 mb-4 flex-row items-center">
-            <Text className="text-xs font-bold text-primary">📚 カテゴリ別クイズの結果</Text>
+          <View style={[styles.modeBadge, { backgroundColor: colors.primary + '20', borderColor: colors.primary, borderWidth: 1 }]}>
+            <Text style={[styles.modeBadgeText, { color: colors.primary }]}>📚 カテゴリ別クイズの結果</Text>
           </View>
         )}
 
-        <View className="items-center gap-4 mb-8 mt-8">
-          <Text className="text-5xl font-bold text-primary">
+        {/* スコア表示 */}
+        <View style={styles.scoreSection}>
+          <Text style={[styles.scoreValue, { color: colors.primary }]}>
             {state.score}/{state.questions.length}
           </Text>
-          <Text className="text-2xl font-semibold text-foreground">
+          <Text style={[styles.percentage, { color: colors.foreground }]}>
             {percentage}%
           </Text>
-          <Text className="text-base text-muted">
+          <Text style={[styles.scoreMessage, { color: colors.muted }]}>
             {percentage >= 80 ? '素晴らしい！' : percentage >= 60 ? '良好です' : 'もう一度挑戦しましょう'}
           </Text>
         </View>
 
-        <View className="bg-surface rounded-xl p-6 mb-6 border border-border">
-          <View className="h-2 bg-border rounded-full overflow-hidden mb-4">
+        {/* スコアボックス */}
+        <View style={[styles.scoreBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={[styles.scoreProgressBar, { backgroundColor: colors.border }]}>
             <View
-              className={`h-full rounded-full ${
-                percentage >= 80
-                  ? 'bg-success'
-                  : percentage >= 60
-                  ? 'bg-warning'
-                  : 'bg-error'
-              }`}
-              style={{ width: `${percentage}%` }}
+              style={[styles.scoreProgressFill, { width: `${percentage}%`, backgroundColor: getScoreColor(percentage) }]}
             />
           </View>
-          <View className="flex-row justify-between">
-            <Text className="text-sm text-muted">正解</Text>
-            <Text className="text-sm font-semibold text-foreground">
+          <View style={styles.scoreRow}>
+            <Text style={[styles.scoreLabel, { color: colors.muted }]}>正解</Text>
+            <Text style={[styles.scoreCount, { color: colors.foreground }]}>
               {state.score}問
             </Text>
           </View>
-          <View className="flex-row justify-between mt-2">
-            <Text className="text-sm text-muted">不正解</Text>
-            <Text className="text-sm font-semibold text-foreground">
+          <View style={styles.scoreRow}>
+            <Text style={[styles.scoreLabel, { color: colors.muted }]}>不正解</Text>
+            <Text style={[styles.scoreCount, { color: colors.foreground }]}>
               {state.questions.length - state.score}問
             </Text>
           </View>
         </View>
 
-        <View className="mb-6">
-          <Text className="text-lg font-bold text-foreground mb-4">
+        {/* カテゴリ別成績 */}
+        <View style={styles.categorySection}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
             カテゴリ別の成績
           </Text>
-          <View className="gap-3">
-            {categoryStats.map((stat, index) => (
-              <View key={index} className="bg-surface rounded-lg p-4 border border-border">
-                <View className="flex-row justify-between items-center mb-2">
-                  <Text className="font-semibold text-foreground flex-1">
-                    {stat.category}
-                  </Text>
-                  <Text className={`font-bold text-sm ${
-                    stat.percentage >= 80
-                      ? 'text-success'
-                      : stat.percentage >= 60
-                      ? 'text-warning'
-                      : 'text-error'
-                  }`}>
-                    {stat.percentage}%
-                  </Text>
-                </View>
-                <View className="h-1.5 bg-border rounded-full overflow-hidden">
-                  <View
-                    className={`h-full rounded-full ${
-                      stat.percentage >= 80
-                        ? 'bg-success'
-                        : stat.percentage >= 60
-                        ? 'bg-warning'
-                        : 'bg-error'
-                    }`}
-                    style={{ width: `${stat.percentage}%` }}
-                  />
-                </View>
-                <Text className="text-xs text-muted mt-2">
-                  {stat.correct}/{stat.total}問正解
+          {categoryStats.map((stat, index) => (
+            <View key={index} style={[styles.categoryItem, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={styles.categoryHeader}>
+                <Text style={[styles.categoryName, { color: colors.foreground }]}>
+                  {stat.category}
+                </Text>
+                <Text style={[styles.categoryScore, { color: getScoreColor(stat.percentage) }]}>
+                  {stat.percentage}%
                 </Text>
               </View>
-            ))}
-          </View>
+              <View style={[styles.categoryProgressBar, { backgroundColor: colors.border }]}>
+                <View
+                  style={[styles.categoryProgressFill, { width: `${stat.percentage}%`, backgroundColor: getScoreColor(stat.percentage) }]}
+                />
+              </View>
+              <Text style={[styles.categoryDetail, { color: colors.muted }]}>
+                {stat.correct}/{stat.total}問正解
+              </Text>
+            </View>
+          ))}
         </View>
 
+        {/* 弱点分析 */}
         {weakCategories.length > 0 && (
-          <View className="mb-6 bg-warning/10 rounded-lg p-4 border border-warning/30">
-            <Text className="font-bold text-warning mb-3">
+          <View style={[styles.weakPointsBox, { backgroundColor: colors.warning + '10', borderColor: colors.warning + '30' }]}>
+            <Text style={[styles.weakPointsTitle, { color: colors.warning }]}>
               📌 弱点分析
             </Text>
-            <View className="gap-2">
-              {weakCategories.map((cat, index) => (
-                <Text key={index} className="text-sm text-foreground">
-                  • {cat.category}: {cat.percentage}% ({cat.correct}/{cat.total})
-                </Text>
-              ))}
-            </View>
-            <Text className="text-xs text-muted mt-3">
+            {weakCategories.map((cat, index) => (
+              <Text key={index} style={[styles.weakPointItem, { color: colors.foreground }]}>
+                • {cat.category}: {cat.percentage}% ({cat.correct}/{cat.total})
+              </Text>
+            ))}
+            <Text style={[styles.weakPointsHint, { color: colors.muted }]}>
               これらのカテゴリを重点的に復習することをお勧めします。
             </Text>
           </View>
         )}
 
-        <View className="gap-3 mt-auto">
+        {/* ボタン */}
+        <View style={styles.buttonContainer}>
           <Pressable
             onPress={handleRetry}
             style={({ pressed }) => [
+              styles.button,
               {
+                backgroundColor: colors.primary,
                 opacity: pressed ? 0.9 : 1,
                 transform: [{ scale: pressed ? 0.97 : 1 }],
               },
             ]}
           >
-            <View className="bg-primary py-4 rounded-lg items-center justify-center">
-              <Text className="font-bold text-base text-background">
-                もう一度挑戦
-              </Text>
-            </View>
+            <Text style={[styles.buttonText, { color: colors.background }]}>
+              もう一度挑戦
+            </Text>
           </Pressable>
 
           <Pressable
             onPress={handleHome}
             style={({ pressed }) => [
+              styles.button,
               {
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.border,
                 opacity: pressed ? 0.9 : 1,
               },
             ]}
           >
-            <View className="bg-surface border border-border py-4 rounded-lg items-center justify-center">
-              <Text className="font-bold text-base text-foreground">
-                ホームへ戻る
-              </Text>
-            </View>
+            <Text style={[styles.buttonText, { color: colors.foreground }]}>
+              ホームへ戻る
+            </Text>
           </Pressable>
         </View>
       </ScrollView>
-    </ScreenContainer>
+    </SafeAreaView>
   );
 }

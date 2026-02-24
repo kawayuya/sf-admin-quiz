@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { ScrollView, Text, View, Pressable, ActivityIndicator } from 'react-native';
-import { ScreenContainer } from '@/components/screen-container';
+import { ScrollView, Text, View, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuiz } from '@/lib/quiz-context';
 import { Question } from '@/lib/types';
 import questions from '@/lib/questions.json';
@@ -15,25 +15,158 @@ export default function QuizScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const navigationRef = useRef<boolean>(false);
 
-  // クイズを初期化（ランダムに20問を選択 or 苦手克服モード）
+  const createStyles = () => StyleSheet.create({
+    safeArea: {
+      flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+    },
+    loadingContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    modeBadge: {
+      borderRadius: 8,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      marginBottom: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    modeBadgeText: {
+      fontSize: 12,
+      fontWeight: '700' as const,
+    },
+    progressSection: {
+      marginBottom: 24,
+    },
+    progressHeader: {
+      flexDirection: 'row' as const,
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    progressLabel: {
+      fontSize: 14,
+      fontWeight: '600' as const,
+    },
+    progressCount: {
+      fontSize: 12,
+    },
+    progressBar: {
+      height: 8,
+      borderRadius: 4,
+      overflow: 'hidden' as const,
+    },
+    progressFill: {
+      height: '100%' as const,
+      borderRadius: 4,
+    },
+    categoryBadge: {
+      borderRadius: 16,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      alignSelf: 'flex-start' as const,
+      marginBottom: 16,
+    },
+    categoryBadgeText: {
+      fontSize: 12,
+      fontWeight: '600' as const,
+    },
+    questionBox: {
+      borderWidth: 1,
+      borderRadius: 12,
+      paddingVertical: 20,
+      paddingHorizontal: 16,
+      marginBottom: 24,
+    },
+    questionText: {
+      fontSize: 16,
+      fontWeight: '700' as const,
+      lineHeight: 24,
+    },
+    optionsContainer: {
+      marginBottom: 24,
+      gap: 12,
+    },
+    optionButton: {
+      borderWidth: 2,
+      borderRadius: 8,
+      paddingVertical: 16,
+      paddingHorizontal: 12,
+      flexDirection: 'row' as const,
+      alignItems: 'flex-start' as const,
+      gap: 12,
+    },
+    optionCircle: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      borderWidth: 2,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+    },
+    optionCircleText: {
+      fontSize: 14,
+      fontWeight: '700' as const,
+    },
+    optionText: {
+      fontSize: 14,
+      fontWeight: '500' as const,
+      flex: 1,
+      lineHeight: 20,
+    },
+    optionIcon: {
+      fontSize: 18,
+    },
+    feedbackBox: {
+      borderRadius: 8,
+      paddingVertical: 16,
+      paddingHorizontal: 16,
+      marginBottom: 24,
+    },
+    feedbackTitle: {
+      fontSize: 16,
+      fontWeight: '700' as const,
+      marginBottom: 8,
+    },
+    feedbackText: {
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    buttonContainer: {
+      gap: 12,
+    },
+    button: {
+      paddingVertical: 16,
+      borderRadius: 8,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+    },
+    buttonText: {
+      fontSize: 16,
+      fontWeight: '700' as const,
+    },
+  });
+
   useEffect(() => {
-    // 既にクイズが初期化されている場合（苦手克服モード）はスキップ
     if (state.questions.length > 0) {
       setIsLoading(false);
       return;
     }
     
-    // 通常モード：ランダムに10問を選択
     const shuffled = [...questions].sort(() => Math.random() - 0.5).slice(0, 10);
     initializeQuiz(shuffled as Question[]);
     setIsLoading(false);
   }, [initializeQuiz, state.questions.length]);
 
-  // クイズ完了時の処理
   useEffect(() => {
     if (state.isQuizComplete && !navigationRef.current) {
       navigationRef.current = true;
-      // 非同期で遷移を実行
       const timer = setTimeout(() => {
         router.push('/(tabs)/result');
       }, 0);
@@ -42,15 +175,19 @@ export default function QuizScreen() {
   }, [state.isQuizComplete, router]);
 
   if (isLoading || state.questions.length === 0) {
+    const styles = createStyles();
     return (
-      <ScreenContainer className="flex items-center justify-center">
-        <ActivityIndicator size="large" color={colors.primary} />
-      </ScreenContainer>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
     );
   }
 
   const currentQuestion = state.questions[state.currentQuestionIndex];
   const progress = ((state.currentQuestionIndex + 1) / state.questions.length) * 100;
+  const styles = createStyles();
 
   const handleSelectAnswer = (index: number) => {
     selectAnswer(index);
@@ -79,73 +216,79 @@ export default function QuizScreen() {
   const isCorrect = state.hasAnswered && state.answers[state.answers.length - 1]?.isCorrect;
 
   return (
-    <ScreenContainer className="p-4">
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* モード表示 */}
         {state.mode === 'weak-point' && (
-          <View className="bg-warning/20 border border-warning rounded-lg p-2 mb-4 flex-row items-center">
-            <Text className="text-xs font-bold text-warning">🎯 苦手克服モード</Text>
+          <View style={[styles.modeBadge, { backgroundColor: colors.warning + '20', borderColor: colors.warning, borderWidth: 1 }]}>
+            <Text style={[styles.modeBadgeText, { color: colors.warning }]}>🎯 苦手克服モード</Text>
           </View>
         )}
         {state.mode === 'category' && (
-          <View className="bg-primary/20 border border-primary rounded-lg p-2 mb-4 flex-row items-center">
-            <Text className="text-xs font-bold text-primary">📚 カテゴリ別クイズ</Text>
+          <View style={[styles.modeBadge, { backgroundColor: colors.primary + '20', borderColor: colors.primary, borderWidth: 1 }]}>
+            <Text style={[styles.modeBadgeText, { color: colors.primary }]}>📚 カテゴリ別クイズ</Text>
           </View>
         )}
 
         {/* プログレスバー */}
-        <View className="mb-6">
-          <View className="flex-row items-center justify-between mb-2">
-            <Text className="text-sm font-semibold text-foreground">
+        <View style={styles.progressSection}>
+          <View style={styles.progressHeader}>
+            <Text style={[styles.progressLabel, { color: colors.foreground }]}>
               問題 {state.currentQuestionIndex + 1}/{state.questions.length}
             </Text>
-            <Text className="text-xs text-muted">
+            <Text style={[styles.progressCount, { color: colors.muted }]}>
               {state.answers.filter(a => a.isCorrect).length}/{state.currentQuestionIndex} 正解
             </Text>
           </View>
-          <View className="h-2 bg-border rounded-full overflow-hidden">
+          <View style={[styles.progressBar, { backgroundColor: colors.border }]}>
             <View
-              className="h-full bg-primary rounded-full"
-              style={{ width: `${progress}%` }}
+              style={[styles.progressFill, { width: `${progress}%`, backgroundColor: colors.primary }]}
             />
           </View>
         </View>
 
         {/* カテゴリバッジ */}
-        <View className="mb-4">
-          <Text className="text-xs font-semibold text-primary bg-primary/10 px-3 py-1 rounded-full self-start">
-            {currentQuestion.category}
-          </Text>
+        <View style={[styles.categoryBadge, { backgroundColor: colors.primary + '20' }]}>
+          <Text style={[styles.categoryBadgeText, { color: colors.primary }]}>{currentQuestion.category}</Text>
         </View>
 
         {/* 問題文 */}
-        <View className="bg-surface rounded-xl p-5 mb-6 border border-border">
-          <Text className="text-lg font-bold text-foreground leading-relaxed">
-            {currentQuestion.text}
-          </Text>
+        <View style={[styles.questionBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.questionText, { color: colors.foreground }]}>{currentQuestion.text}</Text>
         </View>
 
         {/* 選択肢 */}
-        <View className="gap-3 mb-6">
+        <View style={styles.optionsContainer}>
           {currentQuestion.options.map((option, index) => {
             const isSelected = state.selectedAnswerIndex === index;
             const isCorrectAnswer = index === currentQuestion.correctAnswerIndex;
             const showResult = state.hasAnswered;
 
-            let bgColor = 'bg-surface border-border';
-            let textColor = 'text-foreground';
+            let bgColor = colors.surface;
+            let borderColor = colors.border;
+            let textColor = colors.foreground;
+            let circleColor = colors.border;
 
             if (showResult) {
               if (isCorrectAnswer) {
-                bgColor = 'bg-success/10 border-success';
-                textColor = 'text-success';
+                bgColor = colors.success + '10';
+                borderColor = colors.success;
+                textColor = colors.success;
+                circleColor = colors.success;
               } else if (isSelected && !isCorrect) {
-                bgColor = 'bg-error/10 border-error';
-                textColor = 'text-error';
+                bgColor = colors.error + '10';
+                borderColor = colors.error;
+                textColor = colors.error;
+                circleColor = colors.error;
               }
             } else if (isSelected) {
-              bgColor = 'bg-primary/10 border-primary';
-              textColor = 'text-primary';
+              bgColor = colors.primary + '10';
+              borderColor = colors.primary;
+              textColor = colors.primary;
+              circleColor = colors.primary;
             }
 
             return (
@@ -154,27 +297,28 @@ export default function QuizScreen() {
                 onPress={() => handleSelectAnswer(index)}
                 disabled={state.hasAnswered}
                 style={({ pressed }) => [
+                  styles.optionButton,
                   {
+                    backgroundColor: bgColor,
+                    borderColor: borderColor,
                     opacity: pressed && !state.hasAnswered ? 0.7 : 1,
                   },
                 ]}
               >
-                <View className={`border-2 rounded-lg p-4 flex-row items-start gap-3 ${bgColor}`}>
-                  <View className={`w-8 h-8 rounded-full border-2 border-current items-center justify-center ${textColor}`}>
-                    <Text className={`font-bold ${textColor}`}>
-                      {String.fromCharCode(65 + index)}
-                    </Text>
-                  </View>
-                  <Text className={`flex-1 text-base leading-relaxed ${textColor}`}>
-                    {option}
+                <View style={[styles.optionCircle, { borderColor: circleColor }]}>
+                  <Text style={[styles.optionCircleText, { color: circleColor }]}>
+                    {String.fromCharCode(65 + index)}
                   </Text>
-                  {showResult && isCorrectAnswer && (
-                    <Text className="text-xl">✓</Text>
-                  )}
-                  {showResult && isSelected && !isCorrect && (
-                    <Text className="text-xl">✗</Text>
-                  )}
                 </View>
+                <Text style={[styles.optionText, { color: textColor }]}>
+                  {option}
+                </Text>
+                {showResult && isCorrectAnswer && (
+                  <Text style={styles.optionIcon}>✓</Text>
+                )}
+                {showResult && isSelected && !isCorrect && (
+                  <Text style={styles.optionIcon}>✗</Text>
+                )}
               </Pressable>
             );
           })}
@@ -182,68 +326,73 @@ export default function QuizScreen() {
 
         {/* フィードバック・解説 */}
         {state.hasAnswered && (
-          <View className={`rounded-lg p-4 mb-6 ${isCorrect ? 'bg-success/10' : 'bg-error/10'}`}>
-            <Text className={`font-bold text-base mb-2 ${isCorrect ? 'text-success' : 'text-error'}`}>
+          <View style={[
+            styles.feedbackBox,
+            {
+              backgroundColor: isCorrect ? colors.success + '10' : colors.error + '10',
+            },
+          ]}>
+            <Text style={[
+              styles.feedbackTitle,
+              { color: isCorrect ? colors.success : colors.error },
+            ]}>
               {isCorrect ? '✓ 正解！' : '✗ 不正解'}
             </Text>
-            <Text className="text-sm text-foreground leading-relaxed">
+            <Text style={[styles.feedbackText, { color: colors.foreground }]}>
               {currentQuestion.explanation}
             </Text>
           </View>
         )}
 
         {/* ボタン */}
-        <View className="gap-3">
+        <View style={styles.buttonContainer}>
           {!state.hasAnswered ? (
             <Pressable
               onPress={handleSubmit}
               disabled={state.selectedAnswerIndex === null}
               style={({ pressed }) => [
+                styles.button,
                 {
+                  backgroundColor: state.selectedAnswerIndex === null
+                    ? colors.muted + '30'
+                    : colors.primary,
                   opacity: pressed ? 0.9 : 1,
                   transform: [{ scale: pressed ? 0.97 : 1 }],
                 },
               ]}
             >
-              <View
-                className={`py-4 rounded-lg items-center justify-center ${
-                  state.selectedAnswerIndex === null
-                    ? 'bg-muted/30'
-                    : 'bg-primary'
-                }`}
-              >
-                <Text
-                  className={`font-bold text-base ${
-                    state.selectedAnswerIndex === null
-                      ? 'text-muted'
-                      : 'text-background'
-                  }`}
-                >
-                  回答する
-                </Text>
-              </View>
+              <Text style={[
+                styles.buttonText,
+                {
+                  color: state.selectedAnswerIndex === null
+                    ? colors.muted
+                    : colors.background,
+                },
+              ]}>
+                回答する
+              </Text>
             </Pressable>
           ) : (
             <Pressable
               onPress={handleNext}
               style={({ pressed }) => [
+                styles.button,
                 {
+                  backgroundColor: colors.primary,
                   opacity: pressed ? 0.9 : 1,
                   transform: [{ scale: pressed ? 0.97 : 1 }],
                 },
               ]}
             >
-              <View className="bg-primary py-4 rounded-lg items-center justify-center">
-                <Text className="font-bold text-base text-background">
-                  {state.currentQuestionIndex + 1 === state.questions.length
-                    ? '結果を見る'
-                    : '次の問題へ'}
-                </Text>
-              </View>
+              <Text style={[styles.buttonText, { color: colors.background }]}>
+                {state.currentQuestionIndex + 1 === state.questions.length
+                  ? '結果を見る'
+                  : '次の問題へ'}
+              </Text>
             </Pressable>
           )}
         </View>
       </ScrollView>
-    </ScreenContainer>
+    </SafeAreaView>
   );
 }
