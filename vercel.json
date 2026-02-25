@@ -1,6 +1,6 @@
 {
   "buildCommand": "pnpm build",
-  "outputDirectory": "dist",
+  "outputDirectory": "dist/web",
   "framework": "vite",
   "cleanUrls": true,
   "rewrites": [
