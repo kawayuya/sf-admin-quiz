@@ -1,58 +1,46 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
 
-/**
- * Core user table backing auth flow.
- * Extend this file with additional tables as your product grows.
- * Columns use camelCase to match both database fields and generated types.
- */
-export const users = mysqlTable("users", {
-  /**
-   * Surrogate primary key. Auto-incremented numeric value managed by the database.
-   * Use this for relations between tables.
-   */
-  id: int("id").autoincrement().primaryKey(),
-  /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
-  openId: varchar("openId", { length: 64 }).notNull().unique(),
+export const users = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  openId: text("openId").notNull().unique(),
   name: text("name"),
-  email: varchar("email", { length: 320 }),
-  loginMethod: varchar("loginMethod", { length: 64 }),
-  /** Hashed password for email/password authentication (null if using OAuth only) */
+  email: text("email"),
+  loginMethod: text("loginMethod"),
   passwordHash: text("passwordHash"),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  role: text("role", { enum: ["user", "admin"] }).default("user").notNull(),
+  createdAt: integer("createdAt", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: integer("updatedAt", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+  lastSignedIn: integer("lastSignedIn", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// Quiz results table
-export const quizResults = mysqlTable("quizResults", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  mode: varchar("mode", { length: 50 }).default("normal").notNull(),
+export const quizResults = sqliteTable("quizResults", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("userId").notNull(),
+  mode: text("mode").default("normal").notNull(),
   selectedCategories: text("selectedCategories"),
-  totalQuestions: int("totalQuestions").notNull(),
-  correctAnswers: int("correctAnswers").notNull(),
-  score: int("score").notNull(),
+  totalQuestions: integer("totalQuestions").notNull(),
+  correctAnswers: integer("correctAnswers").notNull(),
+  score: integer("score").notNull(),
   categoryResults: text("categoryResults"),
   wrongQuestionIds: text("wrongQuestionIds"),
-  timeSpent: int("timeSpent"),
-  completedAt: timestamp("completedAt").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  timeSpent: integer("timeSpent"),
+  completedAt: integer("completedAt", { mode: "timestamp" }).notNull(),
+  createdAt: integer("createdAt", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
 export type QuizResult = typeof quizResults.$inferSelect;
 export type InsertQuizResult = typeof quizResults.$inferInsert;
 
-// Password reset tokens table
-export const passwordResetTokens = mysqlTable("passwordResetTokens", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  token: varchar("token", { length: 255 }).notNull().unique(),
-  expiresAt: timestamp("expiresAt").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+export const passwordResetTokens = sqliteTable("passwordResetTokens", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("userId").notNull(),
+  token: text("token").notNull().unique(),
+  expiresAt: integer("expiresAt", { mode: "timestamp" }).notNull(),
+  createdAt: integer("createdAt", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;

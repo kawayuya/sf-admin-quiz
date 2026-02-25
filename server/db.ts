@@ -1,15 +1,18 @@
-import { eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { eq, desc, ne } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import Database from "better-sqlite3";
+import { InsertUser, users, InsertQuizResult, quizResults, passwordResetTokens } from "../drizzle/schema";
+import * as schema from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
-let _db: ReturnType<typeof drizzle> | null = null;
+let _db: any = null;
+let _sqlite: any = null;
 
-// Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
+  if (!_db) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      _sqlite = new Database("sqlite.db");
+      _db = drizzle(_sqlite, { schema });
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -48,7 +51,6 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 
     textFields.forEach(assignNullable);
 
-    // Handle passwordHash separately (text field, not in textFields)
     if (user.passwordHash !== undefined) {
       values.passwordHash = user.passwordHash;
       updateSet.passwordHash = user.passwordHash;
@@ -74,7 +76,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet.lastSignedIn = new Date();
     }
 
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
+    await db.insert(users).values(values).onConflictDoUpdate({
+      target: users.openId,
       set: updateSet,
     });
   } catch (error) {
@@ -95,13 +98,6 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
-
-
-// Quiz result queries
-import { InsertQuizResult, quizResults } from "../drizzle/schema";
-import { desc } from "drizzle-orm";
-
 export async function createQuizResult(data: InsertQuizResult) {
   const db = await getDb();
   if (!db) {
@@ -109,13 +105,9 @@ export async function createQuizResult(data: InsertQuizResult) {
   }
 
   try {
-    await db.insert(quizResults).values(data);
-    const result = await db
-      .select()
-      .from(quizResults)
-      .orderBy(desc(quizResults.createdAt))
-      .limit(1);
-    return result[0]?.id || 0;
+    const res = await db.insert(quizResults).values(data);
+    const lastId = _sqlite.prepare("SELECT last_insert_rowid() as id").get().id;
+    return lastId || 0;
   } catch (error) {
     console.error("[Database] Failed to create quiz result:", error);
     throw error;
@@ -197,11 +189,6 @@ export async function getWrongQuestionIds(userId: number): Promise<number[]> {
     return [];
   }
 }
-
-
-// Email authentication functions
-import { passwordResetTokens } from "../drizzle/schema";
-import { ne } from "drizzle-orm";
 
 export async function getUserByEmail(email: string) {
   const db = await getDb();

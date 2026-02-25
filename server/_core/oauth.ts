@@ -302,7 +302,7 @@ export function registerOAuthRoutes(app: Express) {
 
       // Create new user with unique openId
       const openId = `email_${crypto.randomBytes(16).toString("hex")}`;
-      console.log("[Auth] Creating user with openId:", openId);
+      console.log("[Auth] Creating user with openId:", openId, "email:", email);
       
       await db.upsertUser({
         openId,
