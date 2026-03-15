@@ -135,7 +135,8 @@
 ## App Store 公開準備フェーズ
 
 - [x] app.config.ts の iOS バンドル ID 確認
-- [x] app.config.ts のアプリ名・説明を確認
+- [x] app.config.ts のアプリ名を「Salesforce 認定資格対策」に変更
+- [x] 日本市場向け App Store SEO 分析完了
 - [x] アプリロゴ・スクリーンショットの生成
 - [x] プライバシーポリシーの作成
 - [x] 利用規約の作成

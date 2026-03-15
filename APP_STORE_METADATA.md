@@ -6,7 +6,7 @@
 
 | 項目 | 内容 |
 |------|------|
-| **アプリ名** | Salesforce Admin Quiz |
+| **アプリ名** | Salesforce 認定資格対策 |
 | **バンドル ID** | space.manus.sf.admin.quiz.t20260222082154 |
 | **バージョン** | 1.0.0 |
 | **ビルド番号** | 1 |
@@ -17,10 +17,10 @@
 ## 説明文
 
 ### サブタイトル
-Salesforce 認定管理者試験対策アプリ
+Admin・Developer試験に対応
 
 ### 説明
-Salesforce Admin Quiz は、Salesforce 認定管理者試験の合格を目指すための学習アプリです。
+Salesforce 認定資格対策 は、Salesforce 認定管理者試験の合格を目指すための学習アプリです。
 
 **主な機能：**
 - 250問以上の過去問を収録
