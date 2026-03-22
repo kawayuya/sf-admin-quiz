@@ -1,7 +1,6 @@
 {
   "buildCommand": "pnpm build",
   "outputDirectory": "dist/web",
-  "framework": "vite",
   "cleanUrls": true,
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
