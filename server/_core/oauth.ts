@@ -3,8 +3,8 @@ import type { Express, Request, Response } from "express";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
-import crypto from "crypto";
-import { promisify } from "util";
+import crypto from "node:crypto";
+import { promisify } from "node:util";
 
 const scryptAsync = promisify(crypto.scrypt);
 
