@@ -10,6 +10,7 @@
     "dev:metro": "cross-env EXPO_USE_METRO_WORKSPACE_ROOT=1 npx expo start --web --port ${EXPO_PORT:-8081}",
     "build": "npx expo export --platform web --output-dir dist/web",
     "start": "npx expo export --platform web --output-dir dist/web",
+    "start:server": "tsx server/_core/index.ts",
     "check": "tsc --noEmit",
     "lint": "expo lint",
     "format": "prettier --write .",
