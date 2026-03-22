@@ -39,7 +39,7 @@ export default function EmailLoginScreen() {
       setError(null);
       console.log("[EmailLogin] Attempting login with email:", email, "isSignUp:", isSignUp);
 
-      await login(email, password);
+      await login(email, password, isSignUp);
       console.log("[EmailLogin] Login successful");
 
       // Navigate to home

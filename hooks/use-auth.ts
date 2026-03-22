@@ -63,14 +63,14 @@ export function useAuth(options?: UseAuthOptions) {
   }, []);
 
   const login = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string, isSignUp: boolean = false) => {
       try {
         setLoading(true);
         setError(null);
         console.log("[useAuth] Starting email login...");
 
-        // Call email login API (isSignUp = false for login)
-        const response = await Api.emailLogin(email, password, false);
+        // Call email login API
+        const response = await Api.emailLogin(email, password, isSignUp);
         console.log("[useAuth] Email login response:", response);
 
         // Store session token on native platforms
