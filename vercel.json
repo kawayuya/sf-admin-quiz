@@ -1,4 +1,5 @@
 {
+  "installCommand": "pnpm i --no-frozen-lockfile",
   "buildCommand": "pnpm build",
   "outputDirectory": "dist/web",
   "cleanUrls": true,
